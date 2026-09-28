@@ -51,7 +51,7 @@ export default function ModalAturLimit({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 px-4">
-      <div className="w-full max-w-md space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="max-h-[85vh] w-full max-w-md space-y-4 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex justify-between items-center">
           <h3 className="text-base font-bold text-slate-900">
             Atur Limit Anggaran Bulanan

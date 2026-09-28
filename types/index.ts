@@ -20,6 +20,12 @@ export interface Transaksi {
   tanggal: Date;
 }
 
+export type DashboardTransaction = Omit<Transaksi, "id" | "tanggal"> & {
+  id: string;
+  tanggalObj: Date;
+  tanggalStr: string;
+};
+
 export interface Kategori {
   id?: string;
   nama: string;

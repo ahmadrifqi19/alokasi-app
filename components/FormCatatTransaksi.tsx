@@ -2,11 +2,13 @@
 
 import React, { useState } from "react";
 import { X, ArrowUpRight, ArrowDownLeft, ArrowRightLeft, Check } from "lucide-react";
-import { TipeTransaksi } from "@/types";
+import { Dompet, TipeTransaksi } from "@/types";
 
 interface Props {
   isOpen: boolean;
   initialData?: { nominal: number; catatan: string; kategoriId: string } | null;
+  daftarDompet: Dompet[];
+  walletsLoaded: boolean;
   onClose: () => void;
   onSubmit: (data: {
     tipe: TipeTransaksi;
@@ -19,27 +21,55 @@ interface Props {
   }) => void;
 }
 
-export default function FormCatatTransaksi({ isOpen, initialData, onClose, onSubmit }: Props) {
+export default function FormCatatTransaksi({
+  isOpen,
+  initialData,
+  daftarDompet,
+  walletsLoaded,
+  onClose,
+  onSubmit,
+}: Props) {
   const [tipe, setTipe] = useState<TipeTransaksi>("expense");
   const [nominal, setNominal] = useState(() =>
     initialData ? String(initialData.nominal) : "",
   );
-  const [dompetId, setDompetId] = useState("d1");
-  const [dompetTujuanId, setDompetTujuanId] = useState("d2");
+  const [dompetId, setDompetId] = useState("");
+  const [dompetTujuanId, setDompetTujuanId] = useState("");
   const [kategoriId, setKategoriId] = useState(initialData?.kategoriId ?? "k1");
   const [catatan, setCatatan] = useState(initialData?.catatan ?? "");
+
+  const walletsWithId = daftarDompet.filter(
+    (dompet): dompet is Dompet & { id: string } => Boolean(dompet.id),
+  );
+  const selectedDompetId = walletsWithId.some((dompet) => dompet.id === dompetId)
+    ? dompetId
+    : walletsWithId[0]?.id ?? "";
+  const transferWallets = walletsWithId.filter(
+    (dompet) => dompet.id !== selectedDompetId,
+  );
+  const selectedDompetTujuanId = transferWallets.some(
+    (dompet) => dompet.id === dompetTujuanId,
+  )
+    ? dompetTujuanId
+    : transferWallets[0]?.id ?? "";
+  const walletOptionsDisabled = !walletsLoaded || walletsWithId.length === 0;
+  const submitDisabled =
+    walletOptionsDisabled ||
+    (tipe === "transfer" && !selectedDompetTujuanId);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nominal || Number(nominal) <= 0) return;
+    if (!nominal || Number(nominal) <= 0 || !selectedDompetId) return;
+    if (tipe === "transfer" && !selectedDompetTujuanId) return;
 
     onSubmit({
       tipe,
       nominal: Number(nominal),
-      dompetId,
-      dompetTujuanId: tipe === "transfer" ? dompetTujuanId : undefined,
+      dompetId: selectedDompetId,
+      dompetTujuanId:
+        tipe === "transfer" ? selectedDompetTujuanId : undefined,
       kategoriId: tipe !== "transfer" ? kategoriId : undefined,
       catatan,
       tanggal: new Date(),
@@ -51,8 +81,8 @@ export default function FormCatatTransaksi({ isOpen, initialData, onClose, onSub
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-0 sm:items-center sm:p-4">
-      <div className="w-full max-w-md space-y-5 rounded-t-2xl border border-slate-200 bg-white p-5 shadow-sm sm:rounded-2xl sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-3 sm:items-center sm:p-4">
+      <div className="max-h-[85vh] w-full max-w-md space-y-5 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex justify-between items-center">
           <h2 className="text-base font-bold text-slate-800">Catat Transaksi</h2>
           <button
@@ -123,14 +153,28 @@ export default function FormCatatTransaksi({ isOpen, initialData, onClose, onSub
                 {tipe === "transfer" ? "Dari Dompet" : "Sumber Dompet"}
               </label>
               <select
-                value={dompetId}
+                value={selectedDompetId}
                 onChange={(e) => setDompetId(e.target.value)}
+                disabled={walletOptionsDisabled}
                 className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-600"
               >
-                <option value="d1">Dompet Tunai</option>
-                <option value="d2">Bank BCA</option>
-                <option value="d3">GoPay / OVO</option>
+                {!walletsLoaded ? (
+                  <option value="">Memuat dompet...</option>
+                ) : walletsWithId.length === 0 ? (
+                  <option value="">Belum ada dompet</option>
+                ) : (
+                  walletsWithId.map((dompet) => (
+                    <option key={dompet.id} value={dompet.id}>
+                      {dompet.nama}
+                    </option>
+                  ))
+                )}
               </select>
+              {walletsLoaded && walletsWithId.length === 0 && (
+                <p className="mt-1 text-[10px] text-slate-500">
+                  Tambahkan dompet terlebih dahulu untuk mencatat transaksi.
+                </p>
+              )}
             </div>
 
             {tipe === "transfer" ? (
@@ -139,13 +183,20 @@ export default function FormCatatTransaksi({ isOpen, initialData, onClose, onSub
                   Ke Dompet
                 </label>
                 <select
-                  value={dompetTujuanId}
+                  value={selectedDompetTujuanId}
                   onChange={(e) => setDompetTujuanId(e.target.value)}
+                  disabled={!selectedDompetTujuanId}
                   className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-600"
                 >
-                  <option value="d1">Dompet Tunai</option>
-                  <option value="d2">Bank BCA</option>
-                  <option value="d3">GoPay / OVO</option>
+                  {transferWallets.length === 0 ? (
+                    <option value="">Perlu dompet lain</option>
+                  ) : (
+                    transferWallets.map((dompet) => (
+                      <option key={dompet.id} value={dompet.id}>
+                        {dompet.nama}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
             ) : (
@@ -184,6 +235,7 @@ export default function FormCatatTransaksi({ isOpen, initialData, onClose, onSub
 
           <button
             type="submit"
+            disabled={submitDisabled}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 active:scale-[0.98]"
           >
             <Check className="w-4 h-4 stroke-[3]" />

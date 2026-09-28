@@ -19,8 +19,15 @@ import {
   X,
   Edit3,
   Upload,
+  RotateCcw,
+  AlertTriangle,
 } from "lucide-react";
-import { subscribeFirebaseTransactions, subscribeFirebaseWallets } from "@/lib/firestore-sync";
+import {
+  subscribeFirebaseTransactions,
+  subscribeFirebaseWallets,
+} from "@/lib/firestore-sync";
+import { db } from "@/lib/firebase";
+import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 
 // Helper Kompresi Gambar ke Avatar Small Base64 (Max 150px agar sangat ringan)
 async function compressImageFile(file: File, maxWidth = 150, quality = 0.6): Promise<string> {
@@ -53,6 +60,20 @@ async function compressImageFile(file: File, maxWidth = 150, quality = 0.6): Pro
   });
 }
 
+// Helper Fungsi Reset Data User di Firestore
+async function resetUserDataToZero(userId: string) {
+  const collectionsToReset = ["transactions", "budgets", "goals", "wallets"];
+
+  for (const colName of collectionsToReset) {
+    const colRef = collection(db, "users", userId, colName);
+    const snapshot = await getDocs(colRef);
+    const deletePromises = snapshot.docs.map((d) =>
+      deleteDoc(doc(db, "users", userId, colName, d.id))
+    );
+    await Promise.all(deletePromises);
+  }
+}
+
 export default function ProfilePage() {
   const { user, loading, logout, updateUserProfile, updateUserPassword } = useAuth();
   const router = useRouter();
@@ -64,6 +85,7 @@ export default function ProfilePage() {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isSecurityOpen, setIsSecurityOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   // Form Edit Profil State
   const [newName, setNewName] = useState("");
@@ -85,6 +107,10 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [securityMsg, setSecurityMsg] = useState({ text: "", type: "" });
+
+  // Reset Data State
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetMsg, setResetMsg] = useState({ text: "", type: "" });
 
   // Settings Toggles State
   const [notifyDaily, setNotifyDaily] = useState(true);
@@ -178,6 +204,27 @@ export default function ProfilePage() {
     }
   };
 
+  // Handler Reset Data Ke Nol
+  const handleResetData = async () => {
+    if (!user) return;
+    setIsResetting(true);
+    setResetMsg({ text: "", type: "" });
+
+    try {
+      await resetUserDataToZero(user.uid);
+      setResetMsg({ text: "Semua data berhasil direset ke nol!", type: "success" });
+      setTimeout(() => {
+        setIsResetModalOpen(false);
+        setResetMsg({ text: "", type: "" });
+      }, 1500);
+    } catch (error) {
+      console.error("Gagal reset data:", error);
+      setResetMsg({ text: "Gagal mereset data. Silakan coba lagi.", type: "error" });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   const handleLogout = async () => {
     if (confirm("Apakah Anda yakin ingin keluar dari akun?")) {
       await logout();
@@ -207,7 +254,7 @@ export default function ProfilePage() {
     : "Pengguna Baru";
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] pb-36 text-slate-800 font-sans antialiased">
+    <main className="mx-auto min-h-screen w-full max-w-md bg-[#F8FAFC] pb-36 text-slate-800 font-sans antialiased">
       {/* HIDDEN INPUT UPLOAD */}
       <input
         type="file"
@@ -242,6 +289,7 @@ export default function ProfilePage() {
               </div>
             )}
             <button
+              type="button"
               onClick={openEditProfile}
               className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-full ring-2 ring-white hover:bg-blue-700 transition-colors"
               title="Ubah Foto Profil"
@@ -362,10 +410,31 @@ export default function ProfilePage() {
             </div>
             <ChevronRight className="w-4 h-4 text-slate-400" />
           </div>
+
+          {/* Fitur Reset Data ke Nol */}
+          <div
+            onClick={() => {
+              setResetMsg({ text: "", type: "" });
+              setIsResetModalOpen(true);
+            }}
+            className="p-4 flex items-center justify-between hover:bg-amber-50/50 cursor-pointer transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-100/80 text-amber-700 rounded-xl">
+                <RotateCcw className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-amber-900">Reset Data ke Nol</p>
+                <p className="text-[10px] text-amber-600">Kosongkan riwayat transaksi & anggaran</p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-amber-400" />
+          </div>
         </section>
 
         {/* LOGOUT */}
         <button
+          type="button"
           onClick={handleLogout}
           className="w-full bg-rose-50 hover:bg-rose-100 border border-rose-200/80 text-rose-600 font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 text-xs transition-colors shadow-sm"
         >
@@ -375,11 +444,16 @@ export default function ProfilePage() {
 
       {/* MODAL EDIT PROFIL */}
       {isEditProfileOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
-          <div className="w-full max-w-md space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
+          <div className="relative max-h-[85vh] w-full max-w-md space-y-4 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
             <div className="flex justify-between items-center">
               <h3 className="text-base font-bold text-slate-900">Ubah Profil Saya</h3>
-              <button onClick={() => setIsEditProfileOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                type="button"
+                onClick={() => setIsEditProfileOpen(false)}
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                aria-label="Tutup"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -457,11 +531,16 @@ export default function ProfilePage() {
 
       {/* MODAL KEAMANAN PASSWORD */}
       {isSecurityOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
-          <div className="w-full max-w-md space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
+          <div className="relative max-h-[85vh] w-full max-w-md space-y-4 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
             <div className="flex justify-between items-center">
               <h3 className="text-base font-bold text-slate-900">Ubah Kata Sandi</h3>
-              <button onClick={() => setIsSecurityOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                type="button"
+                onClick={() => setIsSecurityOpen(false)}
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                aria-label="Tutup"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -511,6 +590,70 @@ export default function ProfilePage() {
                 {isSavingPassword ? "Memproses..." : "Perbarui Password"}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL KONFIRMASI RESET DATA */}
+      {isResetModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
+          <div className="relative max-h-[85vh] w-full max-w-md space-y-4 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2 text-amber-600">
+                <AlertTriangle className="w-5 h-5" />
+                <h3 className="text-base font-bold text-slate-900">Konfirmasi Reset Data</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsResetModalOpen(false)}
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                aria-label="Tutup"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs font-medium text-slate-600 leading-relaxed">
+              Tindakan ini akan menghapus **semua riwayat transaksi, daftar dompet, anggaran, dan target tabungan** Anda secara permanen dari basis data.
+            </p>
+
+            {resetMsg.text && (
+              <div
+                className={`p-3 rounded-xl text-xs text-center font-medium ${
+                  resetMsg.type === "success"
+                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                    : "bg-rose-50 text-rose-600 border border-rose-200"
+                }`}
+              >
+                {resetMsg.text}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsResetModalOpen(false)}
+                disabled={isResetting}
+                className="w-1/2 rounded-xl border border-slate-200 bg-slate-100 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleResetData}
+                disabled={isResetting}
+                className="w-1/2 rounded-xl bg-rose-600 py-2.5 text-xs font-bold text-white hover:bg-rose-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {isResetting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Memproses...
+                  </>
+                ) : (
+                  "Ya, Reset Semua"
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

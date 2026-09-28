@@ -40,8 +40,8 @@ export default function ModalTambahTarget({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-0 sm:items-center sm:p-4">
-      <div className="w-full max-w-md space-y-5 rounded-t-2xl border border-slate-200 bg-white p-5 shadow-sm sm:rounded-2xl sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-3 sm:items-center sm:p-4">
+      <div className="max-h-[85vh] w-full max-w-md space-y-5 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         
         {/* Header Modal */}
         <div className="flex justify-between items-center">

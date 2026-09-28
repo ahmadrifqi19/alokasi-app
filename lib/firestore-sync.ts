@@ -2,135 +2,250 @@ import { db } from "./firebase";
 import {
   collection,
   doc,
-  setDoc,
   onSnapshot,
-  query,
-  orderBy,
+  setDoc,
+  deleteDoc,
+  getDocs,
   serverTimestamp,
 } from "firebase/firestore";
-import { Dompet, AnggaranKategori } from "@/types";
+import type {
+  AnggaranKategori,
+  DashboardTransaction,
+  Dompet,
+  TipeDompet,
+  TipeTransaksi,
+} from "@/types";
+export type { DashboardTransaction } from "@/types";
 
-// Interface Transaksi Asli Dashboard
-export interface DashboardTransaction {
+export interface TargetTabungan {
   id: string;
-  dompetId: string;
-  dompetTujuanId?: string;
-  kategoriId?: string;
-  nominal: number;
-  tipe: "expense" | "income" | "transfer";
-  catatan?: string;
-  tanggalObj: Date;
-  tanggalStr: string;
+  namaGoal: string;
+  targetNominal: number;
+  terkumpul: number;
+  tenggatWaktu?: string;
 }
 
-// ------------------------------------------------------------------
-// 1. LISTEN & SAVE TRANSAKSI
-// ------------------------------------------------------------------
+const KATEGORI_NAMA: Record<string, string> = {
+  k1: "Makanan & Kopi",
+  k2: "Hiburan & Nonton",
+  k3: "Belanja",
+  k4: "Kebutuhan Harian",
+  k5: "Transportasi",
+  k6: "Tagihan & Utilitas",
+};
+
+function toDate(value: unknown): Date {
+  if (value instanceof Date) return value;
+  if (typeof value === "object" && value !== null && "toDate" in value) {
+    const convert = value.toDate;
+    if (typeof convert === "function") return convert.call(value) as Date;
+  }
+  if (typeof value === "string" || typeof value === "number") {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) return date;
+  }
+  return new Date();
+}
+
+function toTransaction(
+  id: string,
+  value: Record<string, unknown>,
+): DashboardTransaction | null {
+  const storedType = value.tipe;
+  const tipe: TipeTransaksi | undefined =
+    storedType === "expense" || storedType === "pengeluaran"
+      ? "expense"
+      : storedType === "income" || storedType === "pemasukan"
+        ? "income"
+        : storedType === "transfer"
+          ? "transfer"
+          : undefined;
+  const nominalValue = value.nominal ?? value.amount;
+  const nominal =
+    typeof nominalValue === "number" ? nominalValue : Number(nominalValue);
+
+  if (!tipe || !Number.isFinite(nominal)) return null;
+
+  const tanggalObj = toDate(value.tanggalObj ?? value.tanggal ?? value.createdAt);
+  const kategoriRaw = value.kategoriId ?? value.kategori ?? value.category;
+  const kategoriId =
+    typeof kategoriRaw === "string"
+      ? Object.keys(KATEGORI_NAMA).includes(kategoriRaw)
+        ? kategoriRaw
+        : undefined
+      : undefined;
+  const legacyCategory =
+    typeof value.kategori === "string"
+      ? value.kategori
+      : typeof value.category === "string"
+        ? value.category
+        : undefined;
+
+  return {
+    id,
+    dompetId:
+      typeof value.dompetId === "string"
+        ? value.dompetId
+        : typeof value.walletId === "string"
+          ? value.walletId
+          : "",
+    dompetTujuanId:
+      typeof value.dompetTujuanId === "string" ? value.dompetTujuanId : undefined,
+    kategoriId,
+    nominal,
+    tipe,
+    catatan:
+      typeof value.catatan === "string"
+        ? value.catatan
+        : typeof value.note === "string"
+          ? value.note
+          : legacyCategory,
+    tanggalObj,
+    tanggalStr:
+      typeof value.tanggalStr === "string"
+        ? value.tanggalStr
+        : tanggalObj.toLocaleDateString("id-ID"),
+  };
+}
+
+function toDompetType(value: unknown): TipeDompet {
+  return value === "cash" || value === "bank" || value === "ewallet"
+    ? value
+    : "bank";
+}
+
+// ==========================================
+// 1. TRANSAKSI LISTENERS & ACTIONS
+// ==========================================
+
 export function subscribeFirebaseTransactions(
   userId: string,
   callback: (transactions: DashboardTransaction[]) => void
 ) {
-  const transRef = collection(db, "users", userId, "transactions");
-  const q = query(transRef, orderBy("createdAt", "desc"));
+  const ref = collection(db, "users", userId, "transactions");
 
-  return onSnapshot(q, (snapshot) => {
-    const list: DashboardTransaction[] = snapshot.docs.map((docSnap) => {
-      const data = docSnap.data();
-      return {
-        id: docSnap.id,
-        dompetId: data.dompetId,
-        dompetTujuanId: data.dompetTujuanId || "",
-        kategoriId: data.kategoriId || "",
-        nominal: data.nominal,
-        tipe: data.tipe,
-        catatan: data.catatan || "",
-        tanggalObj: data.createdAt?.toDate() || new Date(),
-        tanggalStr: data.tanggalStr || "Baru saja",
-      };
-    });
+  return onSnapshot(ref, (snapshot) => {
+    const list = snapshot.docs
+      .map((snapshotDoc) =>
+        toTransaction(snapshotDoc.id, snapshotDoc.data() as Record<string, unknown>)
+      )
+      .filter((transaction): transaction is DashboardTransaction => transaction !== null)
+      .sort((a, b) => b.tanggalObj.getTime() - a.tanggalObj.getTime());
     callback(list);
   });
 }
 
 export async function saveFirebaseTransaction(
   userId: string,
-  transaksi: DashboardTransaction
+  transaction: DashboardTransaction
 ) {
-  try {
-    const docRef = doc(db, "users", userId, "transactions", transaksi.id);
-
-    // Pembersihan objek: Ubah nilai undefined menjadi string kosong/null agar Firestore tidak melempar error
-    const cleanPayload = {
-      id: transaksi.id,
-      dompetId: transaksi.dompetId,
-      dompetTujuanId: transaksi.dompetTujuanId ?? null,
-      kategoriId: transaksi.kategoriId ?? null,
-      nominal: transaksi.nominal,
-      tipe: transaksi.tipe,
-      catatan: transaksi.catatan ?? "",
-      tanggalStr: transaksi.tanggalStr,
+  const ref = doc(db, "users", userId, "transactions", transaction.id);
+  await setDoc(
+    ref,
+    {
+      id: transaction.id,
+      dompetId: transaction.dompetId,
+      walletId: transaction.dompetId,
+      dompetTujuanId: transaction.dompetTujuanId ?? null,
+      kategoriId: transaction.kategoriId ?? null,
+      nominal: transaction.nominal,
+      tipe: transaction.tipe,
+      catatan: transaction.catatan ?? "",
+      tanggalObj: transaction.tanggalObj,
+      tanggalStr: transaction.tanggalStr,
       createdAt: serverTimestamp(),
-    };
-
-    await setDoc(docRef, cleanPayload);
-  } catch (error) {
-    console.error("Gagal menyimpan transaksi ke Firestore:", error);
-  }
+    },
+    { merge: true },
+  );
 }
 
-// ------------------------------------------------------------------
-// 2. LISTEN & SAVE DOMPET
-// ------------------------------------------------------------------
+export async function deleteFirebaseTransaction(
+  userId: string,
+  transactionId: string
+) {
+  const ref = doc(db, "users", userId, "transactions", transactionId);
+  await deleteDoc(ref);
+}
+
+// ==========================================
+// 2. DOMPET / WALLETS LISTENERS & ACTIONS
+// ==========================================
+
 export function subscribeFirebaseWallets(
   userId: string,
   callback: (wallets: Dompet[]) => void
 ) {
-  const walletsRef = collection(db, "users", userId, "wallets");
-  return onSnapshot(walletsRef, (snapshot) => {
-    if (!snapshot.empty) {
-      const list = snapshot.docs.map((docSnap) => docSnap.data() as Dompet);
-      callback(list);
-    }
+  const ref = collection(db, "users", userId, "wallets");
+
+  return onSnapshot(ref, (snapshot) => {
+    const list: Dompet[] = snapshot.docs.map((snapshotDoc) => {
+      const data = snapshotDoc.data();
+      return {
+        id: snapshotDoc.id,
+        nama: typeof data.nama === "string" ? data.nama : "Dompet",
+        saldo: typeof data.saldo === "number" ? data.saldo : 0,
+        tipe: toDompetType(data.tipe),
+        warna: typeof data.warna === "string" ? data.warna : "bg-blue-600",
+      };
+    });
+    callback(list);
   });
 }
 
-export async function saveFirebaseWallets(userId: string, wallets: Dompet[]) {
-  try {
-    for (const w of wallets) {
-      if (!w.id) {
-        console.warn("Melewati dompet tanpa ID saat sinkronisasi.");
-        continue;
-      }
-
-      const cleanWallet = {
-        id: w.id,
-        nama: w.nama,
-        tipe: w.tipe,
-        saldo: w.saldo,
-        warna: w.warna ?? "bg-blue-600",
-      };
-      await setDoc(doc(db, "users", userId, "wallets", w.id), cleanWallet, {
-        merge: true,
-      });
-    }
-  } catch (error) {
-    console.error("Gagal update dompet ke Firestore:", error);
-  }
+export async function saveFirebaseWallet(userId: string, wallet: Dompet) {
+  const collectionRef = collection(db, "users", userId, "wallets");
+  const ref = wallet.id ? doc(collectionRef, wallet.id) : doc(collectionRef);
+  await setDoc(
+    ref,
+    {
+      id: ref.id,
+      nama: wallet.nama,
+      saldo: wallet.saldo,
+      tipe: wallet.tipe,
+      warna: wallet.warna ?? "bg-blue-600",
+    },
+    { merge: true },
+  );
 }
 
-// ------------------------------------------------------------------
-// 3. LISTEN & SAVE ANGGARAN LIMIT (BUDGET GUARD)
-// ------------------------------------------------------------------
+export async function saveFirebaseWallets(userId: string, wallets: Dompet[]) {
+  await Promise.all(wallets.map((wallet) => saveFirebaseWallet(userId, wallet)));
+}
+
+export async function deleteFirebaseWallet(
+  userId: string,
+  walletId: string
+) {
+  const ref = doc(db, "users", userId, "wallets", walletId);
+  await deleteDoc(ref);
+}
+
+// ==========================================
+// 3. ANGGARAN / BUDGETS LISTENERS & ACTIONS
+// ==========================================
+
 export function subscribeFirebaseBudgets(
   userId: string,
   callback: (budgets: AnggaranKategori[]) => void
 ) {
-  const budgetsRef = collection(db, "users", userId, "budgets");
-  return onSnapshot(budgetsRef, (snapshot) => {
+  const ref = collection(db, "users", userId, "budgets");
+
+  return onSnapshot(ref, (snapshot) => {
     if (!snapshot.empty) {
-      const list = snapshot.docs.map(
-        (docSnap) => docSnap.data() as AnggaranKategori
-      );
+      const list: AnggaranKategori[] = snapshot.docs.map((snapshotDoc) => {
+        const data = snapshotDoc.data();
+        const limit = data.limitBulanan ?? data.batasMaksimal;
+        return {
+          id: typeof data.id === "string" ? data.id : snapshotDoc.id,
+          kategoriId: snapshotDoc.id,
+          namaKategori:
+            typeof data.namaKategori === "string"
+              ? data.namaKategori
+              : KATEGORI_NAMA[snapshotDoc.id] ?? "Kategori Lain",
+          limitBulanan: typeof limit === "number" ? limit : Number(limit) || 0,
+          terpakai: typeof data.terpakai === "number" ? data.terpakai : 0,
+        };
+      });
       callback(list);
     }
   });
@@ -140,19 +255,57 @@ export async function saveFirebaseBudget(
   userId: string,
   budget: AnggaranKategori
 ) {
-  try {
-    const docRef = doc(db, "users", userId, "budgets", budget.kategoriId);
-
-    const cleanBudget = {
-      id: budget.id,
+  const ref = doc(db, "users", userId, "budgets", budget.kategoriId);
+  await setDoc(
+    ref,
+    {
+      id: budget.id ?? budget.kategoriId,
       kategoriId: budget.kategoriId,
       namaKategori: budget.namaKategori,
       limitBulanan: budget.limitBulanan,
       terpakai: budget.terpakai ?? 0,
-    };
+    },
+    { merge: true },
+  );
+}
 
-    await setDoc(docRef, cleanBudget, { merge: true });
-  } catch (error) {
-    console.error("Gagal menyimpan budget limit:", error);
+// ==========================================
+// 4. TARGET TABUNGAN / GOALS LISTENERS & ACTIONS
+// ==========================================
+
+export function subscribeFirebaseGoals(
+  userId: string,
+  callback: (goals: TargetTabungan[]) => void
+) {
+  const ref = collection(db, "users", userId, "goals");
+
+  return onSnapshot(ref, (snapshot) => {
+    const list: TargetTabungan[] = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...(doc.data() as Omit<TargetTabungan, "id">),
+    }));
+    callback(list);
+  });
+}
+
+export async function saveFirebaseGoal(userId: string, goal: TargetTabungan) {
+  const ref = doc(db, "users", userId, "goals", goal.id);
+  await setDoc(ref, goal, { merge: true });
+}
+
+// ==========================================
+// 5. HELPER RESET ALL DATA TO ZERO
+// ==========================================
+
+export async function resetUserDataToZero(userId: string) {
+  const collectionsToReset = ["transactions", "budgets", "goals", "wallets"];
+
+  for (const colName of collectionsToReset) {
+    const colRef = collection(db, "users", userId, colName);
+    const snapshot = await getDocs(colRef);
+    const deletePromises = snapshot.docs.map((d) =>
+      deleteDoc(doc(db, "users", userId, colName, d.id))
+    );
+    await Promise.all(deletePromises);
   }
 }

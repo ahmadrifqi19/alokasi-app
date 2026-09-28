@@ -18,18 +18,6 @@ import { Dompet, Kategori, Transaksi, TargetTabungan } from "@/types";
 export async function initDataUserAlokasi(userId: string) {
   const batch = writeBatch(db);
 
-  // Dompet bawaan
-  const defaultDompet: Omit<Dompet, "id">[] = [
-    { nama: "Dompet Tunai", tipe: "cash", saldo: 0, warna: "#10B981" },
-    { nama: "Bank Utama", tipe: "bank", saldo: 0, warna: "#2563EB" },
-    { nama: "E-Wallet", tipe: "ewallet", saldo: 0, warna: "#F59E0B" },
-  ];
-
-  defaultDompet.forEach((dompet) => {
-    const ref = doc(collection(db, `users/${userId}/dompet`));
-    batch.set(ref, dompet);
-  });
-
   // Kategori bawaan
   const defaultKategori: Omit<Kategori, "id">[] = [
     { nama: "Makanan & Minuman", tipe: "expense", icon: "utensils" },

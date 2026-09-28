@@ -1,43 +1,8 @@
-import type { Transaksi } from "@/types";
-
-export type DashboardTransaction = Omit<Transaksi, "tanggal"> & {
-  tanggalObj: Date;
-  tanggalStr: string;
-};
+import type { DashboardTransaction } from "@/types";
+export type { DashboardTransaction } from "@/types";
 
 const STORAGE_KEY = "alokasi-transactions";
-const DEFAULT_TRANSACTIONS: DashboardTransaction[] = [
-  {
-    id: "t1",
-    dompetId: "d3",
-    kategoriId: "k1",
-    nominal: 28000,
-    tipe: "expense",
-    catatan: "Nasi Uduk Siang",
-    tanggalObj: new Date(),
-    tanggalStr: "Hari Ini, 12:30",
-  },
-  {
-    id: "t2",
-    dompetId: "d2",
-    kategoriId: "k4",
-    nominal: 3500000,
-    tipe: "income",
-    catatan: "Gaji & Project Client",
-    tanggalObj: new Date(),
-    tanggalStr: "Kemarin",
-  },
-  {
-    id: "t3",
-    dompetId: "d1",
-    kategoriId: "k2",
-    nominal: 20000,
-    tipe: "expense",
-    catatan: "Bensin Motor",
-    tanggalObj: new Date(),
-    tanggalStr: "24 Sep 2026",
-  },
-];
+const DEFAULT_TRANSACTIONS: DashboardTransaction[] = [];
 
 const listeners = new Set<() => void>();
 let cachedRaw: string | null | undefined;

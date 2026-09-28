@@ -25,7 +25,9 @@ import {
   subscribeFirebaseTransactions,
   saveFirebaseTransaction,
   subscribeFirebaseWallets,
+  saveFirebaseWallet,
   saveFirebaseWallets,
+  deleteFirebaseWallet,
   subscribeFirebaseBudgets,
   saveFirebaseBudget,
   DashboardTransaction,
@@ -74,6 +76,7 @@ export default function DashboardAlokasi() {
   const [isModalLimitOpen, setIsModalLimitOpen] = useState(false);
 
   const [isScanningOCR, setIsScanningOCR] = useState(false);
+  const [walletsLoadedByUser, setWalletsLoadedByUser] = useState<Record<string, boolean>>({});
   const [receiptDraft, setReceiptDraft] = useState<ReceiptDraft | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -81,11 +84,9 @@ export default function DashboardAlokasi() {
   // ----------------------------------------------------
   // 2. STATE DATA REAL-TIME FIREBASE PER AKUN
   // ----------------------------------------------------
-  const [daftarDompet, setDaftarDompet] = useState<Dompet[]>([
-    { id: "d1", nama: "Dompet Tunai", tipe: "cash", saldo: 0, warna: "bg-slate-600" },
-    { id: "d2", nama: "Bank BCA", tipe: "bank", saldo: 0, warna: "bg-blue-600" },
-    { id: "d3", nama: "GoPay / OVO", tipe: "ewallet", saldo: 0, warna: "bg-sky-600" },
-  ]);
+  const [walletsByUser, setWalletsByUser] = useState<Record<string, Dompet[]>>({});
+  const daftarDompet = user ? walletsByUser[user.uid] ?? [] : [];
+  const isLoadingWallets = !user || walletsLoadedByUser[user.uid] !== true;
 
   const [daftarTransaksi, setDaftarTransaksi] = useState<DashboardTransaction[]>([]);
 
@@ -115,7 +116,8 @@ export default function DashboardAlokasi() {
     });
 
     const unsubWallets = subscribeFirebaseWallets(user.uid, (wallets) => {
-      setDaftarDompet(wallets);
+      setWalletsByUser((current) => ({ ...current, [user.uid]: wallets }));
+      setWalletsLoadedByUser((current) => ({ ...current, [user.uid]: true }));
     });
 
     const unsubBudgets = subscribeFirebaseBudgets(user.uid, (budgets) => {
@@ -232,8 +234,18 @@ export default function DashboardAlokasi() {
       return dompet;
     });
 
-    setDaftarDompet(updatedDompet);
-    await saveFirebaseWallets(user.uid, updatedDompet);
+    setWalletsByUser((current) => ({ ...current, [user.uid]: updatedDompet }));
+    const changedWalletIds = new Set([
+      data.dompetId,
+      ...(data.tipe === "transfer" && data.dompetTujuanId
+        ? [data.dompetTujuanId]
+        : []),
+    ]);
+    await Promise.all(
+      updatedDompet
+        .filter((dompet) => dompet.id && changedWalletIds.has(dompet.id))
+        .map((dompet) => saveFirebaseWallet(user.uid, dompet)),
+    );
 
     // B. Mutasi Anggaran Kategori
     if (data.tipe === "expense" && data.kategoriId) {
@@ -321,7 +333,7 @@ export default function DashboardAlokasi() {
   const userAvatar = user.customPhotoURL || user.photoURL;
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] pb-36 text-slate-800 font-sans antialiased relative overflow-hidden">
+    <main className="relative mx-auto min-h-screen w-full max-w-md overflow-hidden bg-[#F8FAFC] pb-36 text-slate-800 font-sans antialiased">
       {/* BACKGROUND AMBIENT GLOW VARIASI WARNA */}
       <div className="fixed top-[-10%] left-[-15%] w-[130%] h-[400px] bg-gradient-to-br from-blue-200/50 via-sky-100/40 to-indigo-100/50 blur-[110px] pointer-events-none rounded-full" />
       <div className="fixed top-[40%] right-[-10%] w-[300px] h-[300px] bg-cyan-100/40 blur-[90px] pointer-events-none rounded-full" />
@@ -463,7 +475,22 @@ export default function DashboardAlokasi() {
           </div>
 
           <div className="space-y-3">
-            {daftarDompet.map((dompet, idx) => {
+            {isLoadingWallets ? (
+              <p className="py-4 text-center text-xs text-slate-500">Memuat dompet...</p>
+            ) : daftarDompet.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center">
+                <p className="text-xs font-semibold text-slate-700">
+                  Belum ada dompet. Tambahkan dompet pertama Anda.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsModalDompetOpen(true)}
+                  className="mt-3 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+                >
+                  Tambah dompet
+                </button>
+              </div>
+            ) : daftarDompet.map((dompet, idx) => {
               // Aksen warna dinamis untuk setiap ikon dompet
               const badgeColors = [
                 "bg-slate-100 text-slate-700 border-slate-200",
@@ -582,6 +609,8 @@ export default function DashboardAlokasi() {
         key={receiptDraft ? `${receiptDraft.nominal}:${receiptDraft.kategoriId}:${receiptDraft.catatan}` : "manual"}
         isOpen={isModalTransaksiOpen}
         initialData={receiptDraft}
+        daftarDompet={daftarDompet}
+        walletsLoaded={!isLoadingWallets}
         onClose={() => {
           setIsModalTransaksiOpen(false);
           setReceiptDraft(null);
@@ -593,14 +622,16 @@ export default function DashboardAlokasi() {
         onClose={() => setIsModalDompetOpen(false)}
         daftarDompet={daftarDompet}
         onTambahDompet={(d) => {
+          if (!user) return;
           const newWallets = [...daftarDompet, { ...d, id: `d-${Date.now()}` }];
-          setDaftarDompet(newWallets);
-          if (user) saveFirebaseWallets(user.uid, newWallets);
+          setWalletsByUser((current) => ({ ...current, [user.uid]: newWallets }));
+          void saveFirebaseWallets(user.uid, newWallets);
         }}
         onHapusDompet={(id) => {
+          if (!user) return;
           const newWallets = daftarDompet.filter((d) => d.id !== id);
-          setDaftarDompet(newWallets);
-          if (user) saveFirebaseWallets(user.uid, newWallets);
+          setWalletsByUser((current) => ({ ...current, [user.uid]: newWallets }));
+          void deleteFirebaseWallet(user.uid, id);
         }}
       />
       <ModalTambahTarget

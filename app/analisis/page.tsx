@@ -156,7 +156,7 @@ export default function AnalisisPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] pb-36 text-slate-800 font-sans antialiased">
+    <main className="mx-auto min-h-screen w-full max-w-md bg-[#F8FAFC] pb-36 text-slate-800 font-sans antialiased">
 
       {/* TOP BAR */}
       <header className="flex items-center justify-between px-6 pt-8 pb-4">
