@@ -1,21 +1,15 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
-import { BarChart3, Camera, Home, Loader2, Plus, User } from "lucide-react";
-
-type NavigationPage = "home" | "analytics" | "account";
+import { Home, Camera, Plus, BarChart3, User, Loader2 } from "lucide-react";
 
 interface BottomNavigationProps {
-  activePage: NavigationPage;
+  activePage: "home" | "analysis" | "account";
   isScanning?: boolean;
   onScan?: () => void;
   onAddTransaction?: () => void;
 }
-
-const getItemClassName = (isActive: boolean) =>
-  `flex min-w-0 flex-col items-center gap-1 transition-colors ${
-    isActive ? "text-blue-600" : "text-slate-400 hover:text-slate-700"
-  }`;
 
 export default function BottomNavigation({
   activePage,
@@ -24,81 +18,66 @@ export default function BottomNavigation({
   onAddTransaction,
 }: BottomNavigationProps) {
   return (
-    <nav
-      aria-label="Navigasi utama"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-5 pb-[env(safe-area-inset-bottom)]"
-    >
-      <div className="pointer-events-auto mx-auto mb-4 grid w-full max-w-md grid-cols-5 items-center rounded-full border border-slate-200/80 bg-white/90 px-4 py-3 shadow-lg shadow-slate-900/5 backdrop-blur-2xl">
+    <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center pointer-events-none pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+      <nav className="pointer-events-auto flex items-center justify-between w-[92%] max-w-md bg-white/90 backdrop-blur-2xl border border-pink-100/80 px-6 py-3 rounded-3xl shadow-xl shadow-pink-500/10">
+        {/* BERANDA */}
         <Link
           href="/"
-          aria-current={activePage === "home" ? "page" : undefined}
-          className={getItemClassName(activePage === "home")}
+          className={`flex flex-col items-center gap-1 transition-all ${
+            activePage === "home" ? "text-pink-500 scale-105" : "text-pink-300 hover:text-pink-400"
+          }`}
         >
-          <Home className={`h-5 w-5 ${activePage === "home" ? "stroke-[2.5]" : "stroke-[2]"}`} aria-hidden="true" />
-          <span className="text-[9px] font-semibold">Beranda</span>
+          <Home className="w-5 h-5 stroke-[2.2]" />
+          <span className="text-[10px] font-extrabold">Beranda</span>
         </Link>
 
-        {onScan ? (
-          <button
-            type="button"
-            onClick={onScan}
-            disabled={isScanning}
-            aria-label={isScanning ? "Sedang membaca struk" : "Scan struk"}
-            className={`${getItemClassName(false)} disabled:opacity-50`}
-          >
-            {isScanning ? (
-              <Loader2 className="h-5 w-5 animate-spin stroke-[2]" aria-hidden="true" />
-            ) : (
-              <Camera className="h-5 w-5 stroke-[2]" aria-hidden="true" />
-            )}
-            <span className="text-[9px] font-semibold">
-              {isScanning ? "Membaca..." : "Scan"}
-            </span>
-          </button>
-        ) : (
-          <Link href="/" aria-label="Kembali ke beranda untuk scan struk" className={getItemClassName(false)}>
-            <Camera className="h-5 w-5 stroke-[2]" aria-hidden="true" />
-            <span className="text-[9px] font-semibold">Scan</span>
-          </Link>
-        )}
+        {/* SCAN STRUK OCR */}
+        <button
+          type="button"
+          onClick={onScan}
+          disabled={isScanning}
+          className="flex flex-col items-center gap-1 text-pink-300 hover:text-pink-400 transition-all disabled:opacity-50"
+        >
+          {isScanning ? (
+            <Loader2 className="w-5 h-5 animate-spin text-pink-500" />
+          ) : (
+            <Camera className="w-5 h-5 stroke-[2.2]" />
+          )}
+          <span className="text-[10px] font-extrabold">Scan Struk</span>
+        </button>
 
-        {onAddTransaction ? (
-          <button
-            type="button"
-            onClick={onAddTransaction}
-            aria-label="Tambah transaksi"
-            className="-mt-5 flex h-14 w-14 items-center justify-center justify-self-center rounded-full border-4 border-white bg-blue-600 text-white shadow-md shadow-slate-900/10 transition-transform active:scale-95"
-          >
-            <Plus className="h-5 w-5 stroke-[2.5]" aria-hidden="true" />
-          </button>
-        ) : (
-          <Link
-            href="/"
-            aria-label="Buka beranda untuk menambah transaksi"
-            className="-mt-5 flex h-14 w-14 items-center justify-center justify-self-center rounded-full border-4 border-white bg-blue-600 text-white shadow-md shadow-slate-900/10 transition-transform active:scale-95"
-          >
-            <Plus className="h-5 w-5 stroke-[2.5]" aria-hidden="true" />
-          </Link>
-        )}
+        {/* TOMBOL UTAMA CATAT JAJAN */}
+        <button
+          type="button"
+          onClick={onAddTransaction}
+          className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-500 via-rose-400 to-fuchsia-400 text-white shadow-lg shadow-pink-500/30 hover:scale-110 active:scale-95 transition-all -mt-5 ring-4 ring-white"
+          aria-label="Tambah Transaksi"
+        >
+          <Plus className="w-6 h-6 stroke-[3]" />
+        </button>
 
+        {/* ANALISIS / SPENDING REPORT */}
         <Link
           href="/analisis"
-          aria-current={activePage === "analytics" ? "page" : undefined}
-          className={getItemClassName(activePage === "analytics")}
+          className={`flex flex-col items-center gap-1 transition-all ${
+            activePage === "analysis" ? "text-pink-500 scale-105" : "text-pink-300 hover:text-pink-400"
+          }`}
         >
-          <BarChart3 className={`h-5 w-5 ${activePage === "analytics" ? "stroke-[2.5]" : "stroke-[2]"}`} aria-hidden="true" />
-          <span className="text-[9px] font-semibold">Analisis</span>
+          <BarChart3 className="w-5 h-5 stroke-[2.2]" />
+          <span className="text-[10px] font-extrabold">Analisis</span>
         </Link>
 
+        {/* AKUN / PROFIL */}
         <Link
           href="/akun"
-          aria-current={activePage === "account" ? "page" : undefined}
-          className={getItemClassName(activePage === "account")}
+          className={`flex flex-col items-center gap-1 transition-all ${
+            activePage === "account" ? "text-pink-500 scale-105" : "text-pink-300 hover:text-pink-400"
+          }`}
         >
-          <User className={`h-5 w-5 ${activePage === "account" ? "stroke-[2.5]" : "stroke-[2]"}`} aria-hidden="true" />
-          <span className="text-[9px] font-semibold">Akun</span>
+          <User className="w-5 h-5 stroke-[2.2]" />
+          <span className="text-[10px] font-extrabold">Profilku</span>
         </Link>
-      </div>
-    </nav>
+      </nav>
+    </div>
   );
 }

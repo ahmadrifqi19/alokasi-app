@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, FileSpreadsheet, FileText, Download } from "lucide-react";
+import { X, FileSpreadsheet, FileText, Download, Heart, Sparkles } from "lucide-react";
 import Papa from "papaparse";
 import jsPDF from "jspdf";
 import { Transaksi, Dompet } from "@/types";
@@ -42,7 +42,7 @@ export default function ModalExportLaporan({
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `Laporan_Alokasi_${Date.now()}.csv`);
+    link.setAttribute("download", `Laporan_Jajan_Alokasi_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -54,7 +54,7 @@ export default function ModalExportLaporan({
     const doc = new jsPDF();
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
-    doc.text("Laporan Keuangan - Alokasi", 14, 20);
+    doc.text("Laporan Keuangan Cantik - Alokasi", 14, 20);
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
@@ -83,7 +83,7 @@ export default function ModalExportLaporan({
       yPos += 8;
     });
 
-    doc.save(`Laporan_Alokasi_${Date.now()}.pdf`);
+    doc.save(`Laporan_Jajan_Alokasi_${Date.now()}.pdf`);
     onClose();
   };
 
@@ -96,38 +96,50 @@ export default function ModalExportLaporan({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-3 sm:items-center sm:p-4">
-      <div className="max-h-[85vh] w-full max-w-md space-y-5 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-sm p-3 sm:items-center sm:p-4">
+      <div className="max-h-[85vh] w-full max-w-md space-y-5 overflow-y-auto overscroll-contain rounded-[2rem] border border-pink-100 bg-white p-5 shadow-2xl sm:p-6">
+        {/* Header Modal */}
         <div className="flex justify-between items-center">
-          <h2 className="text-base font-bold text-slate-800">
-            Export Laporan Bulanan
-          </h2>
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-pink-50 text-pink-500 rounded-xl">
+              <Heart className="w-5 h-5 fill-pink-500 text-pink-500" />
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold text-slate-800">
+                Ekspor Laporan Keuangan 💖
+              </h2>
+              <p className="text-[11px] text-pink-400 font-bold">Unduh rekap jajan & tabungan kamu</p>
+            </div>
+          </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors"
+            className="p-1.5 bg-pink-50 hover:bg-pink-100 text-pink-400 rounded-full transition-colors"
+            aria-label="Tutup"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
+        {/* Pilihan Format Ekspor */}
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={() => setFormat("csv")}
             className={`p-4 rounded-2xl border text-left flex flex-col justify-between space-y-2 transition-all ${
               format === "csv"
-                ? "border-blue-600 bg-blue-50/50 ring-2 ring-blue-600/20"
-                : "border-slate-200 hover:border-slate-300"
+                ? "border-pink-500 bg-pink-50/50 ring-2 ring-pink-500/20"
+                : "border-pink-100 hover:border-pink-200 bg-pink-50/20"
             }`}
           >
             <FileSpreadsheet
               className={`w-6 h-6 ${
-                format === "csv" ? "text-blue-600" : "text-slate-400"
+                format === "csv" ? "text-pink-500" : "text-pink-300"
               }`}
             />
             <div>
-              <p className="text-xs font-bold text-slate-800">Format CSV / Excel</p>
-              <p className="text-[10px] text-slate-400">Cocok untuk diolah di Excel</p>
+              <p className="text-xs font-extrabold text-slate-800">Format CSV / Excel</p>
+              <p className="text-[10px] text-pink-400 font-medium">Rapi untuk diolah di Excel ✨</p>
             </div>
           </button>
 
@@ -136,28 +148,30 @@ export default function ModalExportLaporan({
             onClick={() => setFormat("pdf")}
             className={`p-4 rounded-2xl border text-left flex flex-col justify-between space-y-2 transition-all ${
               format === "pdf"
-                ? "border-blue-600 bg-blue-50/50 ring-2 ring-blue-600/20"
-                : "border-slate-200 hover:border-slate-300"
+                ? "border-pink-500 bg-pink-50/50 ring-2 ring-pink-500/20"
+                : "border-pink-100 hover:border-pink-200 bg-pink-50/20"
             }`}
           >
             <FileText
               className={`w-6 h-6 ${
-                format === "pdf" ? "text-blue-600" : "text-slate-400"
+                format === "pdf" ? "text-pink-500" : "text-pink-300"
               }`}
             />
             <div>
-              <p className="text-xs font-bold text-slate-800">Format PDF</p>
-              <p className="text-[10px] text-slate-400">Siap cetak & dibaca</p>
+              <p className="text-xs font-extrabold text-slate-800">Format PDF</p>
+              <p className="text-[10px] text-pink-400 font-medium">Dokumen siap cetak & baca 📄</p>
             </div>
           </button>
         </div>
 
+        {/* Tombol Download */}
         <button
+          type="button"
           onClick={handleDownload}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 text-xs font-semibold text-white transition-colors hover:bg-blue-700 active:scale-[0.98]"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 via-rose-400 to-fuchsia-400 py-3.5 text-xs font-extrabold text-white transition-opacity hover:opacity-95 active:scale-[0.98] shadow-lg shadow-pink-500/25"
         >
-          <Download className="w-4 h-4 stroke-[2.5]" />
-          Unduh Laporan ({format.toUpperCase()})
+          <Sparkles className="w-4 h-4 text-pink-100" />
+          Unduh Laporan ({format.toUpperCase()}) ✨
         </button>
       </div>
     </div>

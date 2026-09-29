@@ -3,7 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, Loader2, Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail, Lock, User, ArrowRight, Heart, Sparkles } from "lucide-react";
 import { FirebaseError } from "firebase/app";
 import Image from "next/image";
 
@@ -39,15 +39,15 @@ export default function LoginPage() {
 
     if (mode === "register") {
       if (!name.trim()) {
-        setErrorMsg("Nama lengkap wajib diisi.");
+        setErrorMsg("Nama lengkap wajib diisi ya, Cantik!");
         return;
       }
       if (password !== confirmPassword) {
-        setErrorMsg("Konfirmasi password tidak cocok.");
+        setErrorMsg("Konfirmasi password tidak cocok nih, Babe.");
         return;
       }
       if (password.length < 6) {
-        setErrorMsg("Password minimal 6 karakter.");
+        setErrorMsg("Password minimal 6 karakter ya.");
         return;
       }
     }
@@ -68,15 +68,15 @@ export default function LoginPage() {
         code === "auth/wrong-password" ||
         code === "auth/user-not-found"
       ) {
-        setErrorMsg("Email atau password salah.");
+        setErrorMsg("Email atau password kamu salah nih, coba cek lagi ya.");
       } else if (code === "auth/email-already-in-use") {
-        setErrorMsg("Email sudah terdaftar. Silakan lakukan Login.");
+        setErrorMsg("Email sudah terdaftar. Silakan lakukan Masuk (Login).");
       } else if (code === "auth/invalid-email") {
         setErrorMsg("Format email tidak valid.");
       } else if (code === "auth/operation-not-allowed") {
         setErrorMsg("Metode email/password belum diaktifkan di Firebase Console.");
       } else {
-        setErrorMsg("Terjadi kesalahan. Silakan coba beberapa saat lagi.");
+        setErrorMsg("Terjadi kesalahan. Silakan coba beberapa saat lagi ya.");
       }
     } finally {
       setIsSubmitting(false);
@@ -85,53 +85,63 @@ export default function LoginPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] text-sky-600">
+      <div className="flex min-h-screen items-center justify-center bg-[#FFF0F5] text-pink-500">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <p className="text-xs font-semibold text-slate-400">Memuat Alokasi...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
+          <p className="text-xs font-semibold text-pink-400">Memuat Alokasi Cantik...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#F8FAFC] px-4 py-10 text-slate-800 antialiased sm:py-12">
-      <div className="w-full max-w-md space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-      {/* BRAND HEADER */}
-      <div className="text-center space-y-2">
-        <div className="mb-1 flex justify-center">
-          <Image
-            src="/assets/LOGO.png"
-            alt="Logo Alokasi"
-            width={200}
-            height={80}
-            className="h-auto w-48 object-contain"
-            priority
-          />
+    <main className="relative flex min-h-screen items-center justify-center bg-[#FFF0F5] px-4 py-10 text-slate-800 antialiased overflow-hidden sm:py-12">
+      {/* BACKGROUND AMBIENT GLOW PINK & ROSE */}
+      <div className="fixed top-[-10%] left-[-15%] w-[130%] h-[400px] bg-gradient-to-br from-pink-300/60 via-rose-200/50 to-fuchsia-200/60 blur-[110px] pointer-events-none rounded-full" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[300px] h-[300px] bg-pink-200/50 blur-[90px] pointer-events-none rounded-full" />
+
+      <div className="relative z-10 w-full max-w-md space-y-6 rounded-[2rem] border border-pink-100/80 bg-white/80 backdrop-blur-2xl p-6 shadow-2xl sm:p-8">
+        {/* BRAND HEADER */}
+        <div className="text-center space-y-2">
+          <div className="mb-1 flex justify-center">
+            <Image
+              src="/assets/LOGO1.png"
+              alt="Logo Alokasi"
+              width={100}
+              height={40}
+              className="h-auto w-30 object-contain"
+              priority
+            />
+          </div>
+
+          <p className="text-xs font-bold text-pink-400 max-w-xs mx-auto flex items-center justify-center gap-1">
+            {mode === "login" ? (
+              <>
+                Halo Cantik! Masuk dulu yuk <Heart className="w-3.5 h-3.5 fill-pink-400 text-pink-400" />
+              </>
+            ) : (
+              <>
+                Buat akun Alokasi biar jajan makin tertata! ✨
+              </>
+            )}
+          </p>
         </div>
 
-  <p className="text-xs font-medium text-slate-400 max-w-xs mx-auto">
-    {mode === "login"
-      ? "Masuk untuk melanjutkan ke akun Anda."
-      : "Buat akun untuk mulai mencatat keuangan."}
-  </p>
-</div>
-
         {/* TAB SWITCHER */}
-        <div className="grid grid-cols-2 rounded-2xl bg-slate-100/80 p-1 border border-slate-200/60">
+        <div className="grid grid-cols-2 rounded-2xl bg-pink-50/50 p-1.5 border border-pink-100/80">
           <button
             type="button"
             onClick={() => {
               setMode("login");
               setErrorMsg("");
             }}
-            className={`rounded-xl py-2 text-xs font-bold transition-all ${
+            className={`rounded-xl py-2.5 text-xs font-extrabold transition-all ${
               mode === "login"
-                ? "bg-white text-blue-600 shadow-sm"
-                : "text-slate-400 hover:text-slate-700"
+                ? "bg-white text-pink-500 shadow-sm"
+                : "text-pink-300 hover:text-pink-400"
             }`}
           >
-            Masuk
+            Masuk 💕
           </button>
           <button
             type="button"
@@ -139,19 +149,19 @@ export default function LoginPage() {
               setMode("register");
               setErrorMsg("");
             }}
-            className={`rounded-xl py-2 text-xs font-bold transition-all ${
+            className={`rounded-xl py-2.5 text-xs font-extrabold transition-all ${
               mode === "register"
-                ? "bg-white text-blue-600 shadow-sm"
-                : "text-slate-400 hover:text-slate-700"
+                ? "bg-white text-pink-500 shadow-sm"
+                : "text-pink-300 hover:text-pink-400"
             }`}
           >
-            Daftar Akun
+            Daftar Akun ✨
           </button>
         </div>
 
         {/* ALERT ERROR */}
         {errorMsg && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-600 text-center">
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-600 text-center">
             {errorMsg}
           </div>
         )}
@@ -160,58 +170,58 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-3.5">
           {mode === "register" && (
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label className="block text-xs font-extrabold text-pink-500 mb-1">
                 Nama Lengkap
               </label>
               <div className="relative">
-                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-pink-300" />
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Rifqi Fauzi"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none transition-all"
+                  placeholder="Cantik Fauzi"
+                  className="w-full rounded-2xl border border-pink-200 bg-pink-50/30 pl-10 pr-4 py-2.5 text-xs font-bold text-slate-800 placeholder-pink-200 focus:border-pink-500 focus:bg-white focus:outline-none transition-all"
                 />
               </div>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
+            <label className="block text-xs font-extrabold text-pink-500 mb-1">
               Email
             </label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-pink-300" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="nama@email.com"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none transition-all"
+                className="w-full rounded-2xl border border-pink-200 bg-pink-50/30 pl-10 pr-4 py-2.5 text-xs font-bold text-slate-800 placeholder-pink-200 focus:border-pink-500 focus:bg-white focus:outline-none transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
+            <label className="block text-xs font-extrabold text-pink-500 mb-1">
               Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-pink-300" />
               <input
                 type={showPassword ? "text" : "password"}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 pl-10 pr-10 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none transition-all"
+                className="w-full rounded-2xl border border-pink-200 bg-pink-50/30 pl-10 pr-10 py-2.5 text-xs font-bold text-slate-800 placeholder-pink-200 focus:border-pink-500 focus:bg-white focus:outline-none transition-all"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-pink-300 hover:text-pink-500 transition-colors"
                 title={showPassword ? "Sembunyikan Password" : "Lihat Password"}
               >
                 {showPassword ? (
@@ -225,23 +235,23 @@ export default function LoginPage() {
 
           {mode === "register" && (
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label className="block text-xs font-extrabold text-pink-500 mb-1">
                 Konfirmasi Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-pink-300" />
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 pl-10 pr-10 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none transition-all"
+                  className="w-full rounded-2xl border border-pink-200 bg-pink-50/30 pl-10 pr-10 py-2.5 text-xs font-bold text-slate-800 placeholder-pink-200 focus:border-pink-500 focus:bg-white focus:outline-none transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-pink-300 hover:text-pink-500 transition-colors"
                   title={
                     showConfirmPassword
                       ? "Sembunyikan Password"
@@ -261,13 +271,14 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-xs font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 via-rose-400 to-fuchsia-400 py-3.5 text-xs font-extrabold text-white transition-opacity hover:opacity-95 disabled:opacity-50 shadow-lg shadow-pink-500/25"
           >
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 animate-spin text-white" />
             ) : (
               <>
-                <span>{mode === "login" ? "Masuk ke Akun" : "Daftar Akun Sekarang"}</span>
+                <Sparkles className="w-4 h-4 text-pink-100" />
+                <span>{mode === "login" ? "Masuk ke Akun ✨" : "Daftar Akun Sekarang 🌸"}</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -275,8 +286,8 @@ export default function LoginPage() {
         </form>
 
         <div className="relative flex items-center justify-center my-3">
-          <div className="w-full border-t border-slate-200"></div>
-          <span className="absolute bg-white px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+          <div className="w-full border-t border-pink-100"></div>
+          <span className="absolute bg-white px-3 text-[10px] font-extrabold text-pink-300 uppercase tracking-wider">
             atau
           </span>
         </div>
@@ -285,7 +296,7 @@ export default function LoginPage() {
         <button
           type="button"
           onClick={() => loginWithGoogle()}
-          className="flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+          className="flex w-full items-center justify-center gap-3 rounded-2xl border border-pink-100 bg-pink-50/30 px-4 py-3 text-xs font-extrabold text-slate-700 hover:bg-pink-50 transition-colors"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24">
             <path
@@ -305,7 +316,7 @@ export default function LoginPage() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
             />
           </svg>
-          Lanjutkan dengan Google
+          Lanjutkan dengan Google 💕
         </button>
       </div>
     </main>

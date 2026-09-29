@@ -1,5 +1,7 @@
+"use client";
+
 import React from "react";
-import { Flame } from "lucide-react";
+import { Flame, Sparkles, Heart } from "lucide-react";
 import { AnggaranKategori, UserStreak } from "@/types";
 
 interface SectionBudgetingProps {
@@ -21,82 +23,96 @@ export default function SectionBudgeting({
 
   return (
     <div className="space-y-4">
-      {/* BADGE STREAK BANNER */}
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-amber-200/70 bg-amber-50 p-4">
-        <div>
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
-            <Flame className="h-4 w-4 text-amber-600" aria-hidden="true" />
-            {streak.currentStreak} hari berturut-turut
-          </p>
-          <p className="mt-1 text-[10px] text-slate-500">
-            Catatan keuangan harian
-          </p>
+      {/* BADGE STREAK BANNER PINK & ROSE */}
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-pink-200/80 bg-gradient-to-r from-pink-50 via-rose-50 to-fuchsia-50 p-4 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-white/80 rounded-2xl border border-pink-100 shadow-2xs">
+            <Flame className="h-5 w-5 text-rose-500 fill-rose-500" aria-hidden="true" />
+          </div>
+          <div>
+            <p className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800">
+              {streak.currentStreak} Hari Rajin Catat Jajan! 🔥
+            </p>
+            <p className="mt-0.5 text-[10px] font-semibold text-pink-400">
+              Pertahankan streak keuangan kamu, Babe! ✨
+            </p>
+          </div>
         </div>
-        <span className="rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-          {streak.poin} Poin
+        <span className="rounded-full border border-pink-200/80 bg-white/90 px-3 py-1 text-xs font-extrabold text-pink-500 shadow-2xs flex items-center gap-1">
+          <Sparkles className="w-3 h-3 text-pink-400" /> {streak.poin} Poin
         </span>
       </div>
 
-      {/* ANGGARAN BULANAN */}
+      {/* ANGGARAN BULANAN (BUDGET GUARD) */}
       <section>
         <div className="flex justify-between items-center mb-3 px-1">
-          <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-            Anggaran Bulanan (Budget Guard)
+          <h2 className="text-xs font-black text-pink-400 uppercase tracking-widest flex items-center gap-1.5">
+            <Heart className="w-3.5 h-3.5 fill-pink-400 text-pink-400" /> Limit Jajan Bulanan
           </h2>
           <button
+            type="button"
             onClick={onOpenModalLimit}
-            className="text-xs font-bold text-blue-600 hover:text-blue-700"
+            className="text-xs font-extrabold text-pink-500 hover:text-pink-600 transition-colors"
           >
             + Atur Limit
           </button>
         </div>
 
-        <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          {daftarAnggaran.map((ang) => {
-            const sisa = ang.limitBulanan - ang.terpakai;
-            const persentase = Math.min(
-              Math.round((ang.terpakai / ang.limitBulanan) * 100),
-              100
-            );
+        <div className="divide-y divide-pink-50 overflow-hidden rounded-[2rem] border border-pink-100/80 bg-white/80 backdrop-blur-2xl shadow-xs">
+          {daftarAnggaran.length === 0 ? (
+            <div className="p-5 text-center text-xs text-pink-400 font-medium">
+              Belum ada limit anggaran. Klik + Atur Limit untuk membuat batasan jajan! ✨
+            </div>
+          ) : (
+            daftarAnggaran.map((ang) => {
+              const sisa = ang.limitBulanan - ang.terpakai;
+              const persentase = Math.min(
+                Math.round((ang.terpakai / ang.limitBulanan) * 100),
+                100
+              );
 
-            return (
-              <div key={ang.id} className="p-4 space-y-2">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-xs font-bold text-slate-800">
-                      {ang.namaKategori}
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                      Limit: {formatRupiah(ang.limitBulanan)} / bulan
-                    </p>
+              return (
+                <div key={ang.id || ang.kategoriId} className="p-4 space-y-2 hover:bg-pink-50/20 transition-colors">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-xs font-extrabold text-slate-800">
+                        {ang.namaKategori}
+                      </p>
+                      <p className="text-[10px] font-bold text-pink-400">
+                        Limit: {formatRupiah(ang.limitBulanan)} / bulan
+                      </p>
+                    </div>
+                    <span
+                      className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                        sisa < 0
+                          ? "bg-rose-50 text-rose-600 border-rose-100"
+                          : "bg-emerald-50 text-emerald-600 border-emerald-100"
+                      }`}
+                    >
+                      {sisa < 0 ? "Overbudget 🚨" : "Aman ✨"}
+                    </span>
                   </div>
-                  <span
-                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                      sisa < 0
-                        ? "bg-rose-50 text-rose-600"
-                        : "bg-emerald-50 text-emerald-600"
-                    }`}
-                  >
-                    {sisa < 0 ? "Overbudget" : "Aman"}
-                  </span>
-                </div>
 
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${
-                      persentase > 90 ? "bg-rose-500" : "bg-blue-500"
-                    }`}
-                    style={{ width: `${persentase}%` }}
-                  />
-                </div>
+                  {/* Progress Bar Visual Pink Gradient */}
+                  <div className="w-full bg-pink-50 border border-pink-100/60 h-2.5 rounded-full overflow-hidden p-0.5">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        persentase > 90
+                          ? "bg-rose-500"
+                          : "bg-gradient-to-r from-pink-500 via-rose-400 to-fuchsia-400"
+                      }`}
+                      style={{ width: `${persentase}%` }}
+                    />
+                  </div>
 
-                <div className="flex justify-between text-[10px] text-slate-400 font-medium">
-                  <span>Terpakai: {formatRupiah(ang.terpakai)}</span>
-                  <span>Sisa: {formatRupiah(sisa)}</span>
+                  <div className="flex justify-between text-[10px] font-bold text-pink-400/90">
+                    <span>Terpakai: {formatRupiah(ang.terpakai)}</span>
+                    <span>Sisa: {formatRupiah(sisa)}</span>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </section>
     </div>

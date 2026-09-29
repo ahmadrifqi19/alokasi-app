@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Target, Check } from "lucide-react";
+import { X, Heart, Sparkles } from "lucide-react";
 import { TargetTabungan } from "@/types";
 
 interface Props {
@@ -40,22 +40,27 @@ export default function ModalTambahTarget({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-3 sm:items-center sm:p-4">
-      <div className="max-h-[85vh] w-full max-w-md space-y-5 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-sm p-3 sm:items-center sm:p-4">
+      <div className="max-h-[85vh] w-full max-w-md space-y-5 overflow-y-auto overscroll-contain rounded-[2rem] border border-pink-100 bg-white p-5 shadow-2xl sm:p-6">
         
         {/* Header Modal */}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-              <Target className="w-5 h-5" />
+            <div className="p-2 bg-pink-50 text-pink-500 rounded-xl">
+              <Heart className="w-5 h-5 fill-pink-500 text-pink-500" />
             </div>
-            <h2 className="text-base font-bold text-slate-800">
-              Buat Target Tabungan Baru
-            </h2>
+            <div>
+              <h2 className="text-base font-extrabold text-slate-800">
+                Tambah Wishlist Impian ✨
+              </h2>
+              <p className="text-[11px] text-pink-400 font-bold">Wujudkan barang atau impian kamu, Babe!</p>
+            </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors"
+            className="p-1.5 bg-pink-50 hover:bg-pink-100 text-pink-400 rounded-full transition-colors"
+            aria-label="Tutup"
           >
             <X className="w-5 h-5" />
           </button>
@@ -63,21 +68,21 @@ export default function ModalTambahTarget({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Nama Impian / Target
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-pink-500">
+              Nama Impian / Wishlist
             </label>
             <input
               type="text"
-              placeholder="Contoh: Beli Laptop Baru, Liburan Bali"
+              placeholder="Contoh: Beli Skincare Set, Liburan ke Bali 🌸"
               value={nama}
               onChange={(e) => setNama(e.target.value)}
               required
-              className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600"
+              className="w-full mt-1 p-3 bg-pink-50/30 border border-pink-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-pink-500"
             />
           </div>
 
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-pink-500">
               Target Nominal (Rp)
             </label>
             <input
@@ -86,12 +91,12 @@ export default function ModalTambahTarget({
               value={targetNominal}
               onChange={(e) => setTargetNominal(e.target.value)}
               required
-              className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600"
+              className="w-full mt-1 p-3 bg-pink-50/30 border border-pink-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-pink-500"
             />
           </div>
 
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-pink-500">
               Saldo Awal Terkumpul (Opsional)
             </label>
             <input
@@ -99,16 +104,16 @@ export default function ModalTambahTarget({
               placeholder="0"
               value={terkumpul}
               onChange={(e) => setTerkumpul(e.target.value)}
-              className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600"
+              className="w-full mt-1 p-3 bg-pink-50/30 border border-pink-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-pink-500"
             />
           </div>
 
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 text-xs font-semibold text-white transition-colors hover:bg-blue-700 active:scale-[0.98]"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 via-rose-400 to-fuchsia-400 py-3.5 text-xs font-extrabold text-white transition-opacity hover:opacity-95 active:scale-[0.98] shadow-lg shadow-pink-500/25"
           >
-            <Check className="w-4 h-4 stroke-[3]" />
-            Simpan Target Impian
+            <Sparkles className="w-4 h-4 text-pink-100" />
+            Simpan Wishlist Cantik ✨
           </button>
         </form>
       </div>

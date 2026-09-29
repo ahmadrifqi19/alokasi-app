@@ -17,6 +17,8 @@ import {
   Sparkles,
   X,
   PiggyBank,
+  Heart,
+  ShoppingBag,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -65,7 +67,6 @@ export default function DashboardAlokasi() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
 
-  // Redirect ke /login jika belum terautentikasi
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
@@ -113,11 +114,10 @@ export default function DashboardAlokasi() {
   });
 
   const [daftarAnggaran, setDaftarAnggaran] = useState<AnggaranKategori[]>([
-    { id: "b1", kategoriId: "k1", namaKategori: "Makanan & Kopi", limitBulanan: 1500000, terpakai: 0 },
-    { id: "b2", kategoriId: "k2", namaKategori: "Hiburan & Nonton", limitBulanan: 500000, terpakai: 0 },
+    { id: "b1", kategoriId: "k1", namaKategori: "Coffee & Treats ☕🍰", limitBulanan: 1500000, terpakai: 0 },
+    { id: "b2", kategoriId: "k2", namaKategori: "Shopping & Skincare 💄👗", limitBulanan: 500000, terpakai: 0 },
   ]);
 
-  // Sinkronisasi Data Firestore secara Real-time
   useEffect(() => {
     if (!user) return;
 
@@ -153,7 +153,6 @@ export default function DashboardAlokasi() {
     .filter((t) => t.tipe === "income")
     .reduce((acc, t) => acc + (t.nominal || 0), 0);
 
-  // Total Saldo Keuangan otomatis disesuaikan secara reaktif
   const totalSaldo = daftarDompet.reduce((acc, d) => acc + d.saldo, 0);
 
   const pengeluaranHariIni = daftarTransaksi
@@ -173,15 +172,15 @@ export default function DashboardAlokasi() {
   // ----------------------------------------------------
   // 4. HANDLERS TRANSAKSI SINKRONISASI & SETOR TABUNGAN
   // ----------------------------------------------------
-const handleOpenSetor = (goal: TargetTabungan) => {
-  setSelectedGoal(goal);
-  setSetorNominal("");
-  setSetorError("");
-  if (daftarDompet.length > 0) {
-    setSelectedWalletId(daftarDompet[0].id ?? "");
-  }
-  setIsSetorOpen(true);
-};
+  const handleOpenSetor = (goal: TargetTabungan) => {
+    setSelectedGoal(goal);
+    setSetorNominal("");
+    setSetorError("");
+    if (daftarDompet.length > 0) {
+      setSelectedWalletId(daftarDompet[0].id ?? "");
+    }
+    setIsSetorOpen(true);
+  };
 
   const handleProcessSetorTabungan = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,12 +188,12 @@ const handleOpenSetor = (goal: TargetTabungan) => {
 
     const nominalNum = Number(setorNominal);
     if (!nominalNum || nominalNum <= 0) {
-      setSetorError("Nominal setoran harus lebih dari Rp 0.");
+      setSetorError("Nominal setoran harus lebih dari Rp 0 ya, Babe! ✨");
       return;
     }
 
     if (!selectedWalletId) {
-      setSetorError("Pilih dompet sumber dana terlebih dahulu.");
+      setSetorError("Pilih dompet sumber dana dulu yuk!");
       return;
     }
 
@@ -213,7 +212,7 @@ const handleOpenSetor = (goal: TargetTabungan) => {
       setSelectedGoal(null);
     } catch (error: unknown) {
       setSetorError(
-        error instanceof Error ? error.message : "Gagal melakukan setoran tabungan."
+        error instanceof Error ? error.message : "Gagal menyimpan tabungan kamu nih, coba lagi ya."
       );
     } finally {
       setIsSubmittingSetor(false);
@@ -279,7 +278,6 @@ const handleOpenSetor = (goal: TargetTabungan) => {
   }) => {
     if (!user) return;
 
-    // A. Mutasi Saldo Dompet (Pemasukan bertambah, Pengeluaran berkurang)
     const updatedDompet = daftarDompet.map((dompet) => {
       if (dompet.id === data.dompetId) {
         if (data.tipe === "expense") {
@@ -309,7 +307,6 @@ const handleOpenSetor = (goal: TargetTabungan) => {
         .map((dompet) => saveFirebaseWallet(user.uid, dompet)),
     );
 
-    // B. Mutasi Anggaran Kategori
     if (data.tipe === "expense" && data.kategoriId) {
       const updatedAnggaran = daftarAnggaran.map((ang) => {
         if (ang.kategoriId === data.kategoriId) {
@@ -323,7 +320,6 @@ const handleOpenSetor = (goal: TargetTabungan) => {
       setDaftarAnggaran(updatedAnggaran);
     }
 
-    // C. Simpan Transaksi Baru
     const jamMenit = new Date().toLocaleTimeString("id-ID", {
       hour: "2-digit",
       minute: "2-digit",
@@ -383,10 +379,10 @@ const handleOpenSetor = (goal: TargetTabungan) => {
 
   if (loading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC] text-blue-600">
+      <div className="flex min-h-screen items-center justify-center bg-[#FFF0F5] text-pink-500">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-9 w-9 animate-spin text-blue-600" />
-          <p className="text-xs font-semibold text-slate-400">Memuat Alokasi...</p>
+          <Loader2 className="h-9 w-9 animate-spin text-pink-500" />
+          <p className="text-xs font-semibold text-pink-400">Memuat Alokasi Cantik...</p>
         </div>
       </div>
     );
@@ -395,12 +391,11 @@ const handleOpenSetor = (goal: TargetTabungan) => {
   const userAvatar = user.customPhotoURL || user.photoURL;
 
   return (
-    <main className="relative mx-auto min-h-screen w-full max-w-md overflow-hidden bg-[#F8FAFC] pb-36 text-slate-800 font-sans antialiased">
-      {/* BACKGROUND AMBIENT GLOW VARIASI WARNA */}
-      <div className="fixed top-[-10%] left-[-15%] w-[130%] h-[400px] bg-gradient-to-br from-blue-200/50 via-sky-100/40 to-indigo-100/50 blur-[110px] pointer-events-none rounded-full" />
-      <div className="fixed top-[40%] right-[-10%] w-[300px] h-[300px] bg-cyan-100/40 blur-[90px] pointer-events-none rounded-full" />
+    <main className="relative mx-auto min-h-screen w-full max-w-md overflow-hidden bg-[#FFF0F5] pb-36 text-slate-800 font-sans antialiased">
+      {/* BACKGROUND AMBIENT GLOW PINK & ROSE */}
+      <div className="fixed top-[-10%] left-[-15%] w-[130%] h-[400px] bg-gradient-to-br from-pink-300/60 via-rose-200/50 to-fuchsia-200/60 blur-[110px] pointer-events-none rounded-full" />
+      <div className="fixed top-[40%] right-[-10%] w-[300px] h-[300px] bg-pink-200/50 blur-[90px] pointer-events-none rounded-full" />
 
-      {/* HIDDEN INPUT KAMERA */}
       <input
         type="file"
         ref={fileInputRef}
@@ -421,81 +416,87 @@ const handleOpenSetor = (goal: TargetTabungan) => {
                 width={44}
                 height={44}
                 unoptimized
-                className="w-11 h-11 rounded-2xl object-cover border-2 border-white shadow-xs"
+                className="w-11 h-11 rounded-2xl object-cover border-2 border-white shadow-xs ring-2 ring-pink-200"
               />
             ) : (
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-sky-400 flex items-center justify-center font-bold text-white text-base shadow-xs ring-2 ring-white">
-                {user.displayName ? user.displayName.charAt(0).toUpperCase() : "A"}
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-400 flex items-center justify-center font-bold text-white text-base shadow-xs ring-2 ring-white">
+                {user.displayName ? user.displayName.charAt(0).toUpperCase() : "🌸"}
               </div>
             )}
             <div>
-              <p className="text-[11px] font-semibold text-slate-400">Selamat Datang,</p>
-              <h1 className="text-base font-bold text-slate-800 leading-tight">
-                {user.displayName || "Pengguna Alokasi"}
+              <p className="text-[11px] font-semibold text-pink-400 flex items-center gap-1">
+                Halo Cantik! <Heart className="w-3 h-3 fill-pink-400 text-pink-400" />
+              </p>
+              <h1 className="text-base font-extrabold text-slate-800 leading-tight">
+                {user.displayName || "Girlboss Alokasi"}
               </h1>
             </div>
           </div>
 
           <button
             onClick={handleLogout}
-            className="p-2.5 bg-white/80 hover:bg-rose-50 border border-slate-200/60 hover:border-rose-200 rounded-full text-slate-400 hover:text-rose-500 transition-colors shadow-xs"
+            className="p-2.5 bg-white/80 hover:bg-rose-50 border border-pink-100 rounded-full text-pink-400 hover:text-rose-500 transition-colors shadow-xs"
             title="Keluar"
           >
             <LogOut className="w-4 h-4" />
           </button>
         </div>
 
-        {/* SALDO UTAMA - CARD DENGAN GRADIEN APPLE STYLED */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-sky-500 to-indigo-600 p-6 rounded-[2rem] shadow-xl shadow-blue-500/20 text-white space-y-4 border border-white/20">
+        {/* SALDO UTAMA - PINK CARD ESTETIK */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-pink-500 via-rose-400 to-fuchsia-500 p-6 rounded-[2rem] shadow-xl shadow-pink-500/25 text-white space-y-4 border border-white/30">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-100">Total Saldo Keuangan</span>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-pink-100">
+                  Sisa Uang Jajan & Tabungan 💖
+                </span>
                 <span className="bg-white/20 px-2 py-0.5 rounded-full text-[9px] font-bold text-white backdrop-blur-md flex items-center gap-1">
-                  <Sparkles className="w-2.5 h-2.5 text-amber-300" /> Real-time
+                  <Sparkles className="w-2.5 h-2.5 text-pink-200" /> Real-time
                 </span>
               </div>
               <p className="mt-1.5 break-words text-3xl font-black tabular-nums tracking-tight text-white drop-shadow-xs">
                 {formatRupiah(totalSaldo)}
               </p>
             </div>
-            <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
+            <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30">
               <CreditCard className="h-6 w-6 text-white" aria-hidden="true" />
             </div>
           </div>
-          <p className="text-[11px] text-blue-100/90 font-medium pt-1 border-t border-white/10">Akumulasi saldo terhubung dari seluruh dompet aktif</p>
+          <p className="text-[11px] text-pink-100/90 font-medium pt-1 border-t border-white/20">
+            Semua saldo dompet kamu sudah terkumpul rapi di sini, Babe! ✨
+          </p>
         </div>
 
-        {/* FEATURED ACTION BUTTONS DENGAN AKSEN WARNA VARIAN */}
+        {/* FEATURED ACTION BUTTONS PINK */}
         <div className="grid grid-cols-3 gap-3 mt-4">
           <button
             onClick={() => setIsModalTransaksiOpen(true)}
-            className="bg-white/80 backdrop-blur-xl p-3.5 rounded-2xl flex flex-col items-center justify-center shadow-xs hover:bg-white transition-all active:scale-95 border border-slate-200/80"
+            className="bg-white/80 backdrop-blur-xl p-3.5 rounded-2xl flex flex-col items-center justify-center shadow-xs hover:bg-white transition-all active:scale-95 border border-pink-100/80"
           >
-            <div className="p-2.5 bg-blue-50 text-blue-600 border border-blue-100/60 rounded-xl mb-1.5">
+            <div className="p-2.5 bg-pink-50 text-pink-500 border border-pink-100/80 rounded-xl mb-1.5">
               <Plus className="w-4 h-4 stroke-[2.5]" />
             </div>
-            <span className="text-[11px] font-bold text-slate-700">Catat</span>
+            <span className="text-[11px] font-extrabold text-slate-700">Catat Jajan</span>
           </button>
 
           <button
             onClick={() => setIsModalDompetOpen(true)}
-            className="bg-white/80 backdrop-blur-xl p-3.5 rounded-2xl flex flex-col items-center justify-center shadow-xs hover:bg-white transition-all active:scale-95 border border-slate-200/80"
+            className="bg-white/80 backdrop-blur-xl p-3.5 rounded-2xl flex flex-col items-center justify-center shadow-xs hover:bg-white transition-all active:scale-95 border border-pink-100/80"
           >
-            <div className="p-2.5 bg-sky-50 text-sky-600 border border-sky-100/60 rounded-xl mb-1.5">
+            <div className="p-2.5 bg-rose-50 text-rose-500 border border-rose-100/80 rounded-xl mb-1.5">
               <ArrowDownToLine className="w-4 h-4 stroke-[2.5]" />
             </div>
-            <span className="text-[11px] font-bold text-slate-700">Dompet</span>
+            <span className="text-[11px] font-extrabold text-slate-700">Dompetku</span>
           </button>
 
           <button
             onClick={() => setIsModalExportOpen(true)}
-            className="bg-white/80 backdrop-blur-xl p-3.5 rounded-2xl flex flex-col items-center justify-center shadow-xs hover:bg-white transition-all active:scale-95 border border-slate-200/80"
+            className="bg-white/80 backdrop-blur-xl p-3.5 rounded-2xl flex flex-col items-center justify-center shadow-xs hover:bg-white transition-all active:scale-95 border border-pink-100/80"
           >
-            <div className="p-2.5 bg-indigo-50 text-indigo-600 border border-indigo-100/60 rounded-xl mb-1.5">
+            <div className="p-2.5 bg-fuchsia-50 text-fuchsia-500 border border-fuchsia-100/80 rounded-xl mb-1.5">
               <ArrowUpFromLine className="w-4 h-4 stroke-[2.5]" />
             </div>
-            <span className="text-[11px] font-bold text-slate-700">Ekspor</span>
+            <span className="text-[11px] font-extrabold text-slate-700">Laporan</span>
           </button>
         </div>
       </header>
@@ -504,71 +505,71 @@ const handleOpenSetor = (goal: TargetTabungan) => {
       <div className="px-6 space-y-6 mt-2 relative z-10">
         {/* STATISTIK RINGKASAN */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white/80 backdrop-blur-2xl p-4 rounded-2xl shadow-xs border border-slate-200/80 flex items-center gap-3">
+          <div className="bg-white/80 backdrop-blur-2xl p-4 rounded-2xl shadow-xs border border-pink-100/80 flex items-center gap-3">
             <div className="p-2.5 bg-rose-50 text-rose-500 border border-rose-100/80 rounded-xl">
               <TrendingDown className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Pengeluaran</p>
+              <p className="text-[10px] font-extrabold uppercase tracking-wider text-pink-400">Jajan Day 💸</p>
               <p className="text-xs font-black text-slate-800 mt-0.5">{formatRupiah(pengeluaranHariIni)}</p>
             </div>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-2xl p-4 rounded-2xl shadow-xs border border-slate-200/80 flex items-center gap-3">
+          <div className="bg-white/80 backdrop-blur-2xl p-4 rounded-2xl shadow-xs border border-pink-100/80 flex items-center gap-3">
             <div className="p-2.5 bg-emerald-50 text-emerald-500 border border-emerald-100/80 rounded-xl">
               <TrendingUp className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Pemasukan</p>
+              <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-500">Income In 🌸</p>
               <p className="text-xs font-black text-slate-800 mt-0.5">{formatRupiah(totalPemasukanBulanIni)}</p>
             </div>
           </div>
         </div>
 
         {/* DOMPET & REKENING */}
-        <section className="bg-white/80 backdrop-blur-2xl p-5 rounded-[2rem] shadow-xs border border-slate-200/80 space-y-4">
+        <section className="bg-white/80 backdrop-blur-2xl p-5 rounded-[2rem] shadow-xs border border-pink-100/80 space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <Wallet className="w-4 h-4 text-blue-600" /> Dompet Saya
+              <Wallet className="w-4 h-4 text-pink-500" /> Dompet & E-Wallet Cantik
             </h2>
-            <button onClick={() => setIsModalDompetOpen(true)} className="text-xs font-bold text-blue-600 hover:text-blue-700">
+            <button onClick={() => setIsModalDompetOpen(true)} className="text-xs font-extrabold text-pink-500 hover:text-pink-600">
               Kelola
             </button>
           </div>
 
           <div className="space-y-3">
             {isLoadingWallets ? (
-              <p className="py-4 text-center text-xs text-slate-500">Memuat dompet...</p>
+              <p className="py-4 text-center text-xs text-pink-400 font-medium">Memuat dompet kamu...</p>
             ) : daftarDompet.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center">
+              <div className="rounded-2xl border border-dashed border-pink-200 bg-pink-50/50 px-4 py-6 text-center">
                 <p className="text-xs font-semibold text-slate-700">
-                  Belum ada dompet. Tambahkan dompet pertama Anda.
+                  Belum ada dompet nih. Tambah dompet pertama kamu yuk! 🛍️
                 </p>
                 <button
                   type="button"
                   onClick={() => setIsModalDompetOpen(true)}
-                  className="mt-3 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+                  className="mt-3 rounded-xl bg-pink-500 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-pink-600"
                 >
-                  Tambah dompet
+                  + Tambah Dompet
                 </button>
               </div>
             ) : daftarDompet.map((dompet, idx) => {
               const badgeColors = [
-                "bg-slate-100 text-slate-700 border-slate-200",
-                "bg-blue-50 text-blue-600 border-blue-100",
-                "bg-sky-50 text-sky-600 border-sky-100",
+                "bg-pink-50 text-pink-600 border-pink-100",
+                "bg-rose-50 text-rose-600 border-rose-100",
+                "bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100",
               ];
               const colorClass = badgeColors[idx % badgeColors.length];
 
               return (
-                <div key={dompet.id} className="flex items-center justify-between p-3.5 bg-slate-50/70 rounded-2xl border border-slate-100/80">
+                <div key={dompet.id} className="flex items-center justify-between p-3.5 bg-pink-50/30 rounded-2xl border border-pink-100/50">
                   <div className="flex items-center gap-3">
                     <div className={`w-9 h-9 rounded-xl border flex items-center justify-center font-black text-xs ${colorClass}`}>
                       {dompet.nama.substring(0, 2).toUpperCase()}
                     </div>
                     <div>
                       <p className="text-xs font-bold text-slate-800">{dompet.nama}</p>
-                      <p className="text-[10px] text-slate-400 uppercase font-semibold">{dompet.tipe}</p>
+                      <p className="text-[10px] text-pink-400 uppercase font-bold">{dompet.tipe}</p>
                     </div>
                   </div>
                   <p className="text-xs font-black text-slate-800">{formatRupiah(dompet.saldo)}</p>
@@ -585,19 +586,21 @@ const handleOpenSetor = (goal: TargetTabungan) => {
           onOpenModalLimit={() => setIsModalLimitOpen(true)}
         />
 
-        {/* TARGET TABUNGAN */}
+        {/* TARGET TABUNGAN / WISHLIST */}
         <section>
           <div className="flex justify-between items-center mb-3 px-1">
-            <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">Target Tabungan</h2>
-            <button onClick={() => setIsModalTargetOpen(true)} className="text-xs font-bold text-blue-600 hover:text-blue-700">
+            <h2 className="text-xs font-black text-pink-400 uppercase tracking-widest flex items-center gap-1.5">
+              <ShoppingBag className="w-3.5 h-3.5" /> Wishlist & Savings Goals ✨
+            </h2>
+            <button onClick={() => setIsModalTargetOpen(true)} className="text-xs font-extrabold text-pink-500 hover:text-pink-600">
               + Baru
             </button>
           </div>
 
           <div className="space-y-3">
             {daftarTarget.length === 0 ? (
-              <div className="p-5 text-center text-xs text-slate-400 font-medium bg-white/80 rounded-2xl border border-slate-200/80">
-                Belum ada target tabungan. Klik + Baru untuk menambah target.
+              <div className="p-5 text-center text-xs text-pink-400 font-medium bg-white/80 rounded-2xl border border-pink-100/80">
+                Belum ada wishlist tercatat. Klik + Baru buat nambah impian kamu! 🛍️✨
               </div>
             ) : (
               daftarTarget.map((target) => (
@@ -609,7 +612,7 @@ const handleOpenSetor = (goal: TargetTabungan) => {
                   <CardTargetTabungan
                     target={{
                       ...target,
-                      nama: target.namaGoal ?? (target as unknown as { nama?: string }).nama ?? "Target Tabungan"
+                      nama: target.namaGoal ?? (target as unknown as { nama?: string }).nama ?? "Wishlist Cantik"
                     }}
                   />
                 </div>
@@ -621,25 +624,25 @@ const handleOpenSetor = (goal: TargetTabungan) => {
         {/* TRANSAKSI TERAKHIR */}
         <section>
           <div className="flex justify-between items-center mb-3 px-1">
-            <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">Aktivitas Terakhir</h2>
+            <h2 className="text-xs font-black text-pink-400 uppercase tracking-widest">Riwayat Jajan Terakhir 📝</h2>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-xs border border-slate-200/80 divide-y divide-slate-100 overflow-hidden">
+          <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-xs border border-pink-100/80 divide-y divide-pink-50 overflow-hidden">
             {daftarTransaksi.length === 0 ? (
-              <div className="p-6 text-center text-xs text-slate-400 font-semibold">
-                Belum ada transaksi tercatat.
+              <div className="p-6 text-center text-xs text-pink-400 font-semibold">
+                Masih bersih nih, belum ada jajan hari ini~ ✨
               </div>
             ) : (
               daftarTransaksi.map((item) => (
-                <div key={item.id} className="p-3.5 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                <div key={item.id} className="p-3.5 flex items-center justify-between hover:bg-pink-50/30 transition-colors">
                   <div className="flex items-center gap-3.5">
                     <div
                       className={`p-2.5 rounded-xl border ${
                         item.tipe === "expense"
-                          ? "bg-rose-50 text-rose-500 border-rose-100/60"
+                          ? "bg-rose-50 text-rose-500 border-rose-100/80"
                           : item.tipe === "income"
-                          ? "bg-emerald-50 text-emerald-500 border-emerald-100/60"
-                          : "bg-blue-50 text-blue-500 border-blue-100/60"
+                          ? "bg-emerald-50 text-emerald-500 border-emerald-100/80"
+                          : "bg-pink-50 text-pink-500 border-pink-100/80"
                       }`}
                     >
                       {item.tipe === "expense" && <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />}
@@ -648,9 +651,9 @@ const handleOpenSetor = (goal: TargetTabungan) => {
                     </div>
                     <div>
                       <p className="text-xs font-bold text-slate-800">
-                        {item.catatan || (item.tipe === "transfer" ? "Transfer Saldo" : "Transaksi")}
+                        {item.catatan || (item.tipe === "transfer" ? "Pindah Saldo" : "Transaksi")}
                       </p>
-                      <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                      <p className="text-[10px] text-pink-400 font-semibold mt-0.5">
                         {getNamaDompet(item.dompetId)} • {item.tanggalStr}
                       </p>
                     </div>
@@ -659,10 +662,10 @@ const handleOpenSetor = (goal: TargetTabungan) => {
                   <p
                     className={`text-xs font-black ${
                       item.tipe === "expense"
-                        ? "text-rose-600"
+                        ? "text-rose-500"
                         : item.tipe === "income"
                         ? "text-emerald-600"
-                        : "text-blue-600"
+                        : "text-pink-500"
                     }`}
                   >
                     {item.tipe === "expense" ? "-" : item.tipe === "income" ? "+" : ""}
@@ -682,24 +685,24 @@ const handleOpenSetor = (goal: TargetTabungan) => {
         onAddTransaction={() => setIsModalTransaksiOpen(true)}
       />
 
-      {/* MODAL SETOR TABUNGAN */}
+      {/* MODAL SETOR TABUNGAN / WISHLIST */}
       {isSetorOpen && selectedGoal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
-          <div className="relative w-full max-w-md space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+          <div className="relative w-full max-w-md space-y-4 rounded-2xl border border-pink-100 bg-white p-6 shadow-xl">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                <div className="p-2 bg-pink-50 text-pink-500 rounded-xl">
                   <PiggyBank className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Setor Tabungan</h3>
-                  <p className="text-xs text-slate-400 font-medium">{selectedGoal.namaGoal}</p>
+                  <h3 className="text-base font-bold text-slate-900">Nabung buat Wishlist ✨</h3>
+                  <p className="text-xs text-pink-400 font-bold">{selectedGoal.namaGoal}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsSetorOpen(false)}
-                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                className="rounded-full p-1 text-slate-400 hover:bg-pink-50 hover:text-pink-500 transition-colors"
                 aria-label="Tutup"
               >
                 <X className="w-5 h-5" />
@@ -714,7 +717,7 @@ const handleOpenSetor = (goal: TargetTabungan) => {
 
             <form onSubmit={handleProcessSetorTabungan} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                <label className="block text-xs font-extrabold text-pink-500 mb-1">
                   Nominal Setoran (Rp)
                 </label>
                 <input
@@ -724,18 +727,18 @@ const handleOpenSetor = (goal: TargetTabungan) => {
                   value={setorNominal}
                   onChange={(e) => setSetorNominal(e.target.value)}
                   placeholder="Contoh: 500000"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-800 focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-xl border border-pink-200 bg-pink-50/30 px-4 py-2.5 text-xs font-bold text-slate-800 focus:border-pink-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                <label className="block text-xs font-extrabold text-pink-500 mb-1">
                   Ambil Saldo Dari Dompet
                 </label>
                 <select
                   value={selectedWalletId}
                   onChange={(e) => setSelectedWalletId(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-xl border border-pink-200 bg-pink-50/30 px-4 py-2.5 text-xs text-slate-800 focus:border-pink-500 focus:outline-none"
                 >
                   {daftarDompet.map((w) => (
                     <option key={w.id} value={w.id}>
@@ -748,15 +751,15 @@ const handleOpenSetor = (goal: TargetTabungan) => {
               <button
                 type="submit"
                 disabled={isSubmittingSetor}
-                className="w-full rounded-xl bg-blue-600 py-3 text-xs font-bold text-white hover:bg-blue-700 transition-colors disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
+                className="w-full rounded-xl bg-gradient-to-r from-pink-500 to-rose-400 py-3 text-xs font-extrabold text-white hover:opacity-95 transition-opacity disabled:opacity-50 mt-2 flex items-center justify-center gap-2 shadow-md shadow-pink-500/20"
               >
                 {isSubmittingSetor ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Memproses Setoran...
+                    Memproses Tabungan...
                   </>
                 ) : (
-                  "Konfirmasi Setor Tabungan"
+                  "Konfirmasi Nabung 💖"
                 )}
               </button>
             </form>

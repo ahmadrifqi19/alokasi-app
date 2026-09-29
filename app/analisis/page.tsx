@@ -13,6 +13,7 @@ import {
   Wallet,
   Loader2,
   PieChart,
+  Heart,
 } from "lucide-react";
 
 import {
@@ -21,14 +22,14 @@ import {
 } from "@/lib/firestore-sync";
 import { getFinancialInsight } from "@/lib/gemini";
 
-// Helper Mapping Nama Kategori berdasarkan ID Kategori
+// Helper Mapping Nama Kategori berdasarkan ID Kategori (Girlboss Theme)
 const KATEGORI_MAP: Record<string, string> = {
-  k1: "Makanan & Kopi",
-  k2: "Hiburan & Nonton",
-  k3: "Belanja",
-  k4: "Kebutuhan Harian",
-  k5: "Transportasi",
-  k6: "Tagihan & Utilitas",
+  k1: "Coffee & Treats ☕🍰",
+  k2: "Self-Care & Cinema 🍿🎟️",
+  k3: "Shopping & Skincare 💄👗",
+  k4: "Gajian & Income 🌸",
+  k5: "Transportasi & Taxi 🚗",
+  k6: "Tagihan & Wi-Fi 📑",
 };
 
 export default function AnalisisPage() {
@@ -38,7 +39,7 @@ export default function AnalisisPage() {
   // State Transaksi & Real-time Metrics
   const [transactions, setTransactions] = useState<DashboardTransaction[]>([]);
   const [aiInsight, setAiInsight] = useState<string>(
-    "Pilih Minta saran untuk mendapatkan ringkasan pengeluaran Anda."
+    "Klik 'Minta Saran' biar AI kasih tips keuangan estetik buat kamu, Babe! ✨"
   );
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
@@ -83,7 +84,7 @@ export default function AnalisisPage() {
       const namaKategori =
         KATEGORI_MAP[t.kategoriId || ""] ||
         t.catatan ||
-        "Lainnya";
+        "Jajan Lainnya ✨";
       const nominal = getNominal(t);
       acc[namaKategori] = (acc[namaKategori] || 0) + nominal;
       return acc;
@@ -106,7 +107,7 @@ export default function AnalisisPage() {
   // Request a financial insight.
   const handleFetchAiAdvice = async () => {
     if (transactions.length === 0) {
-      setAiInsight("Belum ada data transaksi yang dicatat untuk dianalisis.");
+      setAiInsight("Belum ada data jajan yang dicatat nih, yuk catat transaksi dulu! 🌸");
       return;
     }
 
@@ -129,7 +130,7 @@ export default function AnalisisPage() {
     } catch (error) {
       console.error("Gagal mendapatkan saran AI:", error);
       setAiInsight(
-        "Saran belum tersedia. Silakan coba lagi sebentar."
+        "Saran belum tersedia. Silakan coba lagi sebentar ya, Cantik! 💕"
       );
     } finally {
       setIsGeneratingAi(false);
@@ -144,11 +145,11 @@ export default function AnalisisPage() {
 
   if (loading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-900 text-sky-400">
+      <div className="flex min-h-screen items-center justify-center bg-[#FFF0F5] text-pink-500">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-sky-500" />
-          <p className="text-xs font-semibold text-slate-400">
-            Menyiapkan Analisis Keuangan...
+          <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
+          <p className="text-xs font-semibold text-pink-400">
+            Menganalisis Keuangan Cantik Kamu...
           </p>
         </div>
       </div>
@@ -156,36 +157,41 @@ export default function AnalisisPage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-md bg-[#F8FAFC] pb-36 text-slate-800 font-sans antialiased">
+    <main className="relative mx-auto min-h-screen w-full max-w-md bg-[#FFF0F5] pb-36 text-slate-800 font-sans antialiased overflow-hidden">
+      {/* BACKGROUND AMBIENT GLOW PINK & ROSE */}
+      <div className="fixed top-[-10%] left-[-15%] w-[130%] h-[400px] bg-gradient-to-br from-pink-300/60 via-rose-200/50 to-fuchsia-200/60 blur-[110px] pointer-events-none rounded-full" />
+      <div className="fixed top-[40%] right-[-10%] w-[300px] h-[300px] bg-pink-200/50 blur-[90px] pointer-events-none rounded-full" />
 
       {/* TOP BAR */}
-      <header className="flex items-center justify-between px-6 pt-8 pb-4">
+      <header className="flex items-center justify-between px-6 pt-8 pb-4 relative z-10">
         <Link
           href="/"
-          className="p-2.5 bg-white hover:bg-slate-50 border border-slate-100 rounded-full text-slate-600 transition-all shadow-sm"
+          className="p-2.5 bg-white/80 hover:bg-pink-50 border border-pink-100 rounded-full text-pink-400 hover:text-pink-600 transition-all shadow-xs"
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
-        <h1 className="text-base font-bold text-slate-800 tracking-tight">
-          Analisis Keuangan
+        <h1 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-1.5">
+          <Heart className="w-4 h-4 fill-pink-500 text-pink-500" /> Analisis Keuangan
         </h1>
         <div className="w-9" />
       </header>
 
       <div className="px-6 space-y-6 relative z-10 mt-2">
-        {/* INSIGHT KEUANGAN */}
-        <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        {/* INSIGHT KEUANGAN AI */}
+        <section className="space-y-3 rounded-[2rem] border border-pink-100/80 bg-white/80 backdrop-blur-2xl p-5 shadow-xs">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-blue-600" />
-              <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-500">
-                Insight Keuangan
+              <div className="p-2 bg-pink-50 text-pink-500 rounded-xl">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <span className="text-[11px] font-extrabold tracking-wider uppercase text-pink-400">
+                AI Financial Advisor ✨
               </span>
             </div>
             <button
               onClick={handleFetchAiAdvice}
               disabled={isGeneratingAi}
-              className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700 active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-400 px-3.5 py-2 text-xs font-extrabold text-white transition-opacity hover:opacity-95 active:scale-95 disabled:opacity-50 shadow-md shadow-pink-500/20"
             >
               {isGeneratingAi ? (
                 <>
@@ -193,55 +199,55 @@ export default function AnalisisPage() {
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-3.5 h-3.5" /> Minta saran
+                  <Sparkles className="w-3.5 h-3.5" /> Minta Saran 💖
                 </>
               )}
             </button>
           </div>
 
-          <p className="pt-1 text-xs font-medium leading-relaxed text-slate-600">
+          <p className="pt-1 text-xs font-bold leading-relaxed text-slate-700">
             {aiInsight}
           </p>
         </section>
 
         {/* CARD 2: ARUS KAS BULAN INI */}
-        <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+        <section className="bg-white/80 backdrop-blur-2xl p-5 rounded-[2rem] shadow-xs border border-pink-100/80 space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-              Arus Kas Bulan Ini
+            <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">
+              Arus Kas Bulan Ini 📊
             </h2>
-            <span className="text-[10px] text-slate-400 font-semibold">
-              Berdasarkan transaksi tersimpan
+            <span className="text-[10px] text-pink-400 font-extrabold">
+              Real-time Firestore
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-100/80 space-y-1">
-              <div className="flex items-center gap-1.5 text-emerald-600 text-[10px] font-bold uppercase">
-                <TrendingUp className="w-3.5 h-3.5" /> Pemasukan
+            <div className="p-3.5 bg-emerald-50/70 rounded-2xl border border-emerald-100/80 space-y-1">
+              <div className="flex items-center gap-1.5 text-emerald-600 text-[10px] font-extrabold uppercase">
+                <TrendingUp className="w-3.5 h-3.5" /> Income 🌸
               </div>
-              <p className="text-sm font-bold text-slate-900">
+              <p className="text-sm font-black text-slate-900">
                 {formatRupiah(totalPemasukan)}
               </p>
             </div>
 
-            <div className="p-3.5 bg-rose-50 rounded-xl border border-rose-100/80 space-y-1">
-              <div className="flex items-center gap-1.5 text-rose-500 text-[10px] font-bold uppercase">
-                <TrendingDown className="w-3.5 h-3.5" /> Pengeluaran
+            <div className="p-3.5 bg-rose-50/70 rounded-2xl border border-rose-100/80 space-y-1">
+              <div className="flex items-center gap-1.5 text-rose-500 text-[10px] font-extrabold uppercase">
+                <TrendingDown className="w-3.5 h-3.5" /> Jajan Day 💸
               </div>
-              <p className="text-sm font-bold text-slate-900">
+              <p className="text-sm font-black text-slate-900">
                 {formatRupiah(totalPengeluaran)}
               </p>
             </div>
           </div>
 
-          <div className="flex justify-between items-center pt-2 border-t border-slate-100 px-1">
-            <span className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
-              <Wallet className="w-4 h-4 text-blue-600" /> Surplus bersih
+          <div className="flex justify-between items-center pt-2 border-t border-pink-50 px-1">
+            <span className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
+              <Wallet className="w-4 h-4 text-pink-500" /> Sisa Surplus Bersih
             </span>
             <span
-              className={`text-xs font-extrabold ${
-                surplusBersih >= 0 ? "text-emerald-600" : "text-rose-600"
+              className={`text-xs font-black ${
+                surplusBersih >= 0 ? "text-emerald-600" : "text-rose-500"
               }`}
             >
               {formatRupiah(surplusBersih)}
@@ -250,40 +256,40 @@ export default function AnalisisPage() {
         </section>
 
         {/* CARD 3: PENGELUARAN PER KATEGORI */}
-        <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+        <section className="bg-white/80 backdrop-blur-2xl p-5 rounded-[2rem] shadow-xs border border-pink-100/80 space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-              Pengeluaran Per Kategori
+            <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">
+              Pengeluaran Per Kategori 🛍️
             </h2>
-            <PieChart className="w-4 h-4 text-slate-400" />
+            <PieChart className="w-4 h-4 text-pink-400" />
           </div>
 
           {kategoriList.length === 0 ? (
-            <div className="p-6 text-center text-xs text-slate-400 font-medium">
-              Belum ada pengeluaran tercatat bulan ini.
+            <div className="p-6 text-center text-xs text-pink-400 font-semibold">
+              Belum ada pengeluaran tercatat bulan ini. ✨
             </div>
           ) : (
             <div className="space-y-3.5">
               {kategoriList.map((kat, index) => (
                 <div key={index} className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-bold text-slate-800">
+                  <div className="flex justify-between text-xs font-extrabold text-slate-800">
                     <span>{kat.nama}</span>
-                    <span className="text-slate-500">
+                    <span className="text-pink-400">
                       {formatRupiah(kat.nominal)}{" "}
-                      <span className="text-blue-600 font-bold">
+                      <span className="text-pink-500 font-black">
                         • {kat.persentase}%
                       </span>
                     </span>
                   </div>
 
-                  <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-pink-50/80 border border-pink-100/50 h-2.5 rounded-full overflow-hidden p-0.5">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
                         index % 3 === 0
-                          ? "bg-rose-500"
+                          ? "bg-rose-400"
                           : index % 3 === 1
-                          ? "bg-amber-500"
-                          : "bg-blue-500"
+                          ? "bg-fuchsia-400"
+                          : "bg-pink-500"
                       }`}
                       style={{ width: `${Math.min(kat.persentase, 100)}%` }}
                     />
@@ -295,7 +301,7 @@ export default function AnalisisPage() {
         </section>
       </div>
 
-      <BottomNavigation activePage="analytics" />
+      <BottomNavigation activePage="analysis" />
     </main>
   );
 }
