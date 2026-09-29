@@ -180,7 +180,7 @@ export default function LoginPage() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Cantik Fauzi"
+                  placeholder="Nama Cantik Kamu"
                   className="w-full rounded-2xl border border-pink-200 bg-pink-50/30 pl-10 pr-4 py-2.5 text-xs font-bold text-slate-800 placeholder-pink-200 focus:border-pink-500 focus:bg-white focus:outline-none transition-all"
                 />
               </div>
