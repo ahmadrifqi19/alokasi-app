@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Eye, EyeOff, Loader2, Mail, Lock, User, ArrowRight } from "lucide-react";
 import { FirebaseError } from "firebase/app";
+import Image from "next/image";
 
 export default function LoginPage() {
   const { user, loginWithGoogle, loginWithEmail, registerWithEmail, loading } = useAuth();
@@ -96,20 +97,25 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F8FAFC] px-4 py-10 text-slate-800 antialiased sm:py-12">
       <div className="w-full max-w-md space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        {/* BRAND HEADER */}
-        <div className="text-center space-y-2">
-          <div className="mb-1 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-xl font-bold text-white">
-            A
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Alokasi
-          </h1>
-          <p className="text-xs font-medium text-slate-400 max-w-xs mx-auto">
-            {mode === "login"
-              ? "Masuk untuk melanjutkan ke akun Anda."
-              : "Buat akun untuk mulai mencatat keuangan."}
-          </p>
+      {/* BRAND HEADER */}
+      <div className="text-center space-y-2">
+        <div className="mb-1 flex justify-center">
+          <Image
+            src="/assets/LOGO.png"
+            alt="Logo Alokasi"
+            width={200}
+            height={80}
+            className="h-auto w-48 object-contain"
+            priority
+          />
         </div>
+
+  <p className="text-xs font-medium text-slate-400 max-w-xs mx-auto">
+    {mode === "login"
+      ? "Masuk untuk melanjutkan ke akun Anda."
+      : "Buat akun untuk mulai mencatat keuangan."}
+  </p>
+</div>
 
         {/* TAB SWITCHER */}
         <div className="grid grid-cols-2 rounded-2xl bg-slate-100/80 p-1 border border-slate-200/60">
