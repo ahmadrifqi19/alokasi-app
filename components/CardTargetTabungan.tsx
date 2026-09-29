@@ -5,12 +5,12 @@ import { Sparkles, CheckCircle2, Heart } from "lucide-react";
 import { TargetTabungan } from "@/types";
 
 interface Props {
-  target: TargetTabungan & { nama?: string };
+  target: TargetTabungan;
   onTambahAlokasi?: (id: string) => void;
 }
 
 export default function CardTargetTabungan({ target }: Props) {
-  const namaGoal = target.nama ?? target.namaGoal ?? "Wishlist Cantik ✨";
+  const namaGoal = target.nama || "Wishlist Cantik ✨";
   
   const persentase = Math.min(
     Math.round((target.terkumpul / target.targetNominal) * 100),
