@@ -15,6 +15,8 @@ import {
   Wallet,
   CreditCard,
   Sparkles,
+  X,
+  PiggyBank,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -30,7 +32,11 @@ import {
   deleteFirebaseWallet,
   subscribeFirebaseBudgets,
   saveFirebaseBudget,
+  subscribeFirebaseGoals,
+  saveFirebaseGoal,
+  setorKeTargetTabungan,
   DashboardTransaction,
+  TargetTabungan,
 } from "@/lib/firestore-sync";
 
 // Import Komponen Modal
@@ -47,7 +53,7 @@ import ModalAturLimit from "@/components/ModalAturLimit";
 import { analyzeReceiptImage } from "@/lib/gemini";
 
 // Import Types
-import { Dompet, TargetTabungan, AnggaranKategori, UserStreak, TipeTransaksi } from "@/types";
+import { Dompet, AnggaranKategori, UserStreak, TipeTransaksi } from "@/types";
 
 interface ReceiptDraft {
   nominal: number;
@@ -75,6 +81,14 @@ export default function DashboardAlokasi() {
   const [isModalExportOpen, setIsModalExportOpen] = useState(false);
   const [isModalLimitOpen, setIsModalLimitOpen] = useState(false);
 
+  // State Modal Setor Tabungan
+  const [isSetorOpen, setIsSetorOpen] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState<TargetTabungan | null>(null);
+  const [setorNominal, setSetorNominal] = useState("");
+  const [selectedWalletId, setSelectedWalletId] = useState("");
+  const [isSubmittingSetor, setIsSubmittingSetor] = useState(false);
+  const [setorError, setSetorError] = useState("");
+
   const [isScanningOCR, setIsScanningOCR] = useState(false);
   const [walletsLoadedByUser, setWalletsLoadedByUser] = useState<Record<string, boolean>>({});
   const [receiptDraft, setReceiptDraft] = useState<ReceiptDraft | null>(null);
@@ -89,11 +103,7 @@ export default function DashboardAlokasi() {
   const isLoadingWallets = !user || walletsLoadedByUser[user.uid] !== true;
 
   const [daftarTransaksi, setDaftarTransaksi] = useState<DashboardTransaction[]>([]);
-
-  const [daftarTarget, setDaftarTarget] = useState<TargetTabungan[]>([
-    { id: "g1", nama: "Beli Laptop M1", targetNominal: 12000000, terkumpul: 0 },
-    { id: "g2", nama: "Dana Darurat", targetNominal: 10000000, terkumpul: 0 },
-  ]);
+  const [daftarTarget, setDaftarTarget] = useState<TargetTabungan[]>([]);
 
   const [userStreak] = useState<UserStreak>({
     currentStreak: 1,
@@ -124,10 +134,15 @@ export default function DashboardAlokasi() {
       setDaftarAnggaran(budgets);
     });
 
+    const unsubGoals = subscribeFirebaseGoals(user.uid, (goals) => {
+      setDaftarTarget(goals);
+    });
+
     return () => {
       unsubTrans();
       unsubWallets();
       unsubBudgets();
+      unsubGoals();
     };
   }, [user]);
 
@@ -156,8 +171,55 @@ export default function DashboardAlokasi() {
   };
 
   // ----------------------------------------------------
-  // 4. HANDLERS TRANSAKSI SINKRONISASI
+  // 4. HANDLERS TRANSAKSI SINKRONISASI & SETOR TABUNGAN
   // ----------------------------------------------------
+const handleOpenSetor = (goal: TargetTabungan) => {
+  setSelectedGoal(goal);
+  setSetorNominal("");
+  setSetorError("");
+  if (daftarDompet.length > 0) {
+    setSelectedWalletId(daftarDompet[0].id ?? "");
+  }
+  setIsSetorOpen(true);
+};
+
+  const handleProcessSetorTabungan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !selectedGoal) return;
+
+    const nominalNum = Number(setorNominal);
+    if (!nominalNum || nominalNum <= 0) {
+      setSetorError("Nominal setoran harus lebih dari Rp 0.");
+      return;
+    }
+
+    if (!selectedWalletId) {
+      setSetorError("Pilih dompet sumber dana terlebih dahulu.");
+      return;
+    }
+
+    setIsSubmittingSetor(true);
+    setSetorError("");
+
+    try {
+      await setorKeTargetTabungan({
+        userId: user.uid,
+        goalId: selectedGoal.id,
+        goalNama: selectedGoal.namaGoal,
+        walletId: selectedWalletId,
+        nominal: nominalNum,
+      });
+      setIsSetorOpen(false);
+      setSelectedGoal(null);
+    } catch (error: unknown) {
+      setSetorError(
+        error instanceof Error ? error.message : "Gagal melakukan setoran tabungan."
+      );
+    } finally {
+      setIsSubmittingSetor(false);
+    }
+  };
+
   const handleTriggerScan = () => {
     fileInputRef.current?.click();
   };
@@ -491,7 +553,6 @@ export default function DashboardAlokasi() {
                 </button>
               </div>
             ) : daftarDompet.map((dompet, idx) => {
-              // Aksen warna dinamis untuk setiap ikon dompet
               const badgeColors = [
                 "bg-slate-100 text-slate-700 border-slate-200",
                 "bg-blue-50 text-blue-600 border-blue-100",
@@ -534,9 +595,26 @@ export default function DashboardAlokasi() {
           </div>
 
           <div className="space-y-3">
-            {daftarTarget.map((target) => (
-              <CardTargetTabungan key={target.id} target={target} />
-            ))}
+            {daftarTarget.length === 0 ? (
+              <div className="p-5 text-center text-xs text-slate-400 font-medium bg-white/80 rounded-2xl border border-slate-200/80">
+                Belum ada target tabungan. Klik + Baru untuk menambah target.
+              </div>
+            ) : (
+              daftarTarget.map((target) => (
+                <div
+                  key={target.id}
+                  onClick={() => handleOpenSetor(target)}
+                  className="cursor-pointer transition-transform active:scale-[0.99]"
+                >
+                  <CardTargetTabungan
+                    target={{
+                      ...target,
+                      nama: target.namaGoal ?? (target as unknown as { nama?: string }).nama ?? "Target Tabungan"
+                    }}
+                  />
+                </div>
+              ))
+            )}
           </div>
         </section>
 
@@ -604,7 +682,89 @@ export default function DashboardAlokasi() {
         onAddTransaction={() => setIsModalTransaksiOpen(true)}
       />
 
-      {/* MODALS */}
+      {/* MODAL SETOR TABUNGAN */}
+      {isSetorOpen && selectedGoal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
+          <div className="relative w-full max-w-md space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                  <PiggyBank className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Setor Tabungan</h3>
+                  <p className="text-xs text-slate-400 font-medium">{selectedGoal.namaGoal}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSetorOpen(false)}
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                aria-label="Tutup"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {setorError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold">
+                {setorError}
+              </div>
+            )}
+
+            <form onSubmit={handleProcessSetorTabungan} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  Nominal Setoran (Rp)
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={setorNominal}
+                  onChange={(e) => setSetorNominal(e.target.value)}
+                  placeholder="Contoh: 500000"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-800 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  Ambil Saldo Dari Dompet
+                </label>
+                <select
+                  value={selectedWalletId}
+                  onChange={(e) => setSelectedWalletId(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-none"
+                >
+                  {daftarDompet.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.nama} (Saldo: {formatRupiah(w.saldo)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmittingSetor}
+                className="w-full rounded-xl bg-blue-600 py-3 text-xs font-bold text-white hover:bg-blue-700 transition-colors disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
+              >
+                {isSubmittingSetor ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Memproses Setoran...
+                  </>
+                ) : (
+                  "Konfirmasi Setor Tabungan"
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* OTHER MODALS */}
       <FormCatatTransaksi
         key={receiptDraft ? `${receiptDraft.nominal}:${receiptDraft.kategoriId}:${receiptDraft.catatan}` : "manual"}
         isOpen={isModalTransaksiOpen}
@@ -637,7 +797,16 @@ export default function DashboardAlokasi() {
       <ModalTambahTarget
         isOpen={isModalTargetOpen}
         onClose={() => setIsModalTargetOpen(false)}
-        onTambahTarget={(t) => setDaftarTarget((prev) => [t, ...prev])}
+        onTambahTarget={async (t) => {
+          if (!user) return;
+          const newGoal: TargetTabungan = {
+            id: `g-${Date.now()}`,
+            namaGoal: t.nama,
+            targetNominal: t.targetNominal,
+            terkumpul: 0,
+          };
+          await saveFirebaseGoal(user.uid, newGoal);
+        }}
       />
       <ModalExportLaporan
         isOpen={isModalExportOpen}

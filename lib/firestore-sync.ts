@@ -7,6 +7,7 @@ import {
   deleteDoc,
   getDocs,
   serverTimestamp,
+  runTransaction,
 } from "firebase/firestore";
 import type {
   AnggaranKategori,
@@ -23,6 +24,14 @@ export interface TargetTabungan {
   targetNominal: number;
   terkumpul: number;
   tenggatWaktu?: string;
+}
+
+export interface SetorTabunganParams {
+  userId: string;
+  goalId: string;
+  goalNama: string;
+  walletId: string;
+  nominal: number;
 }
 
 const KATEGORI_NAMA: Record<string, string> = {
@@ -291,6 +300,58 @@ export function subscribeFirebaseGoals(
 export async function saveFirebaseGoal(userId: string, goal: TargetTabungan) {
   const ref = doc(db, "users", userId, "goals", goal.id);
   await setDoc(ref, goal, { merge: true });
+}
+
+// --- AKSI LOGIKA SETOR KE TARGET TABUNGAN & POTONG SALDO DOMPET ---
+export async function setorKeTargetTabungan({
+  userId,
+  goalId,
+  goalNama,
+  walletId,
+  nominal,
+}: SetorTabunganParams) {
+  if (nominal <= 0) throw new Error("Nominal setoran harus lebih dari 0.");
+
+  const goalRef = doc(db, "users", userId, "goals", goalId);
+  const walletRef = doc(db, "users", userId, "wallets", walletId);
+  const newTxRef = doc(collection(db, "users", userId, "transactions"));
+
+  await runTransaction(db, async (transaction) => {
+    const goalSnap = await transaction.get(goalRef);
+    const walletSnap = await transaction.get(walletRef);
+
+    if (!goalSnap.exists()) throw new Error("Target tabungan tidak ditemukan.");
+    if (!walletSnap.exists()) throw new Error("Dompet pilihan tidak ditemukan.");
+
+    const currentGoal = goalSnap.data();
+    const currentWallet = walletSnap.data();
+
+    if ((currentWallet.saldo ?? 0) < nominal) {
+      throw new Error("Saldo dompet tidak mencukupi untuk menabung.");
+    }
+
+    // 1. Tambahkan saldo terkumpul pada Target Tabungan
+    const currentTerkumpul = currentGoal.terkumpul ?? 0;
+    transaction.update(goalRef, { terkumpul: currentTerkumpul + nominal });
+
+    // 2. Potong saldo pada Dompet yang dipilih
+    const currentSaldo = currentWallet.saldo ?? 0;
+    transaction.update(walletRef, { saldo: currentSaldo - nominal });
+
+    // 3. Rekam transaksi pengeluaran alokasi tabungan
+    const now = new Date();
+    transaction.set(newTxRef, {
+      id: newTxRef.id,
+      dompetId: walletId,
+      walletId: walletId,
+      nominal: nominal,
+      tipe: "expense",
+      catatan: `Alokasi Tabungan: ${goalNama}`,
+      tanggalObj: now,
+      tanggalStr: now.toLocaleDateString("id-ID"),
+      createdAt: serverTimestamp(),
+    });
+  });
 }
 
 // ==========================================
