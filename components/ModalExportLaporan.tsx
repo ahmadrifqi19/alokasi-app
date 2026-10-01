@@ -1,16 +1,18 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, FileSpreadsheet, FileText, Download, Heart, Sparkles } from "lucide-react";
+import { X, FileSpreadsheet, FileText, Heart, Sparkles } from "lucide-react";
 import Papa from "papaparse";
 import jsPDF from "jspdf";
 import { Transaksi, Dompet } from "@/types";
+import { CategoryOption, getCategoryName } from "@/lib/category-options";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   daftarTransaksi: (Omit<Transaksi, "tanggal"> & { tanggalStr: string })[];
   daftarDompet: Dompet[];
+  kategoriManual: CategoryOption[];
 }
 
 export default function ModalExportLaporan({
@@ -18,6 +20,7 @@ export default function ModalExportLaporan({
   onClose,
   daftarTransaksi,
   daftarDompet,
+  kategoriManual,
 }: Props) {
   const [format, setFormat] = useState<"csv" | "pdf">("csv");
 
@@ -32,6 +35,7 @@ export default function ModalExportLaporan({
     const dataCSV = daftarTransaksi.map((t) => ({
       Tanggal: t.tanggalStr,
       Tipe: t.tipe.toUpperCase(),
+      Kategori: getCategoryName(t.kategoriId, kategoriManual) || "-",
       Dompet: getNamaDompet(t.dompetId),
       Nominal: t.nominal,
       Catatan: t.catatan || "-",
@@ -61,26 +65,37 @@ export default function ModalExportLaporan({
     doc.text(`Dicetak pada: ${new Date().toLocaleDateString("id-ID")}`, 14, 28);
 
     let yPos = 40;
-    doc.setFont("helvetica", "bold");
-    doc.text("Tanggal", 14, yPos);
-    doc.text("Tipe", 50, yPos);
-    doc.text("Dompet", 80, yPos);
-    doc.text("Nominal (Rp)", 130, yPos);
-    doc.text("Catatan", 170, yPos);
+    const drawTableHeader = () => {
+      doc.setFont("helvetica", "bold");
+      doc.text("Tanggal", 14, yPos);
+      doc.text("Tipe", 50, yPos);
+      doc.text("Dompet", 80, yPos);
+      doc.text("Nominal (Rp)", 130, yPos);
+      doc.text("Kategori / Catatan", 160, yPos);
+      yPos += 6;
+      doc.setLineWidth(0.5);
+      doc.line(14, yPos, 196, yPos);
+      yPos += 8;
+      doc.setFont("helvetica", "normal");
+    };
+    drawTableHeader();
 
-    yPos += 6;
-    doc.setLineWidth(0.5);
-    doc.line(14, yPos, 196, yPos);
-    yPos += 8;
-
-    doc.setFont("helvetica", "normal");
     daftarTransaksi.forEach((t) => {
+      const kategoriCatatan = `${getCategoryName(t.kategoriId, kategoriManual) || "-"} | ${t.catatan || "-"}`;
+      const detailLines = doc.splitTextToSize(kategoriCatatan, 38);
+      const rowHeight = Math.max(8, detailLines.length * 5);
+      if (yPos + rowHeight > 280) {
+        doc.addPage();
+        yPos = 20;
+        drawTableHeader();
+      }
+
       doc.text(t.tanggalStr, 14, yPos);
       doc.text(t.tipe.toUpperCase(), 50, yPos);
       doc.text(getNamaDompet(t.dompetId), 80, yPos);
       doc.text(t.nominal.toLocaleString("id-ID"), 130, yPos);
-      doc.text(t.catatan || "-", 170, yPos);
-      yPos += 8;
+      doc.text(detailLines, 160, yPos);
+      yPos += rowHeight;
     });
 
     doc.save(`Laporan_Jajan_Alokasi_${Date.now()}.pdf`);

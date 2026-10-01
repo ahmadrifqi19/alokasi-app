@@ -1,11 +1,20 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Sparkles, Heart } from "lucide-react";
+import { X, Sparkles, Heart, Trash2 } from "lucide-react";
+import {
+  CategoryOption,
+  createOrFindCategoryOption,
+  DEFAULT_CATEGORY_OPTIONS,
+  OTHER_CATEGORY_OPTION_ID,
+} from "@/lib/category-options";
 
 interface ModalAturLimitProps {
   isOpen: boolean;
+  kategoriManual: CategoryOption[];
+  kategoriArsip: string[];
   onClose: () => void;
+  onDeleteCategory: (categoryId: string) => void;
   onTambahLimit: (data: {
     kategoriId: string;
     namaKategori: string;
@@ -13,38 +22,52 @@ interface ModalAturLimitProps {
   }) => void;
 }
 
-const KATEGORI_GIRLY_OPTIONS = [
-  { id: "k1", nama: "Coffee & Treats ☕🍰" },
-  { id: "k2", nama: "Self-Care & Cinema 🍿🎟️" },
-  { id: "k3", nama: "Shopping & Skincare 💄👗" },
-  { id: "k4", nama: "Kebutuhan Harian 🛒✨" },
-  { id: "k5", nama: "Transportasi & Taxi 🚗" },
-  { id: "k6", nama: "Tagihan & Wi-Fi 📑" },
-];
-
 export default function ModalAturLimit({
   isOpen,
+  kategoriManual,
+  kategoriArsip,
   onClose,
+  onDeleteCategory,
   onTambahLimit,
 }: ModalAturLimitProps) {
   const [selectedKategoriId, setSelectedKategoriId] = useState("k1");
+  const [customKategori, setCustomKategori] = useState("");
   const [limitInput, setLimitInput] = useState("");
 
   if (!isOpen) return null;
+
+  const kategoriOptions = [
+    ...DEFAULT_CATEGORY_OPTIONS.filter(
+      (kategori) => !kategoriArsip.includes(kategori.id),
+    ),
+    ...kategoriManual,
+  ];
+  const activeSelectedKategoriId = kategoriOptions.some(
+    (kategori) => kategori.id === selectedKategoriId,
+  )
+    ? selectedKategoriId
+    : kategoriOptions[0]?.id ?? OTHER_CATEGORY_OPTION_ID;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const limitNum = parseFloat(limitInput);
     if (!limitNum || limitNum <= 0) return;
+    if (activeSelectedKategoriId === OTHER_CATEGORY_OPTION_ID && !customKategori.trim()) return;
 
-    const katObj = KATEGORI_GIRLY_OPTIONS.find((k) => k.id === selectedKategoriId);
+    const katObj =
+      activeSelectedKategoriId === OTHER_CATEGORY_OPTION_ID
+        ? createOrFindCategoryOption(customKategori, kategoriOptions)
+        : kategoriOptions.find((k) => k.id === activeSelectedKategoriId);
+    if (!katObj) return;
 
     onTambahLimit({
-      kategoriId: selectedKategoriId,
-      namaKategori: katObj?.nama || "Kategori Cantik",
+      kategoriId: katObj.id,
+      namaKategori: katObj.nama,
       limitBulanan: limitNum,
     });
 
+    setSelectedKategoriId(katObj.id);
+    setCustomKategori("");
     setLimitInput("");
     onClose();
   };
@@ -81,17 +104,59 @@ export default function ModalAturLimit({
             <label className="block text-xs font-extrabold text-pink-500 mb-1">
               Kategori Jajan
             </label>
-            <select
-              value={selectedKategoriId}
-              onChange={(e) => setSelectedKategoriId(e.target.value)}
-              className="w-full rounded-2xl border border-pink-200 bg-pink-50/30 px-4 py-2.5 text-xs font-bold text-slate-800 focus:border-pink-500 focus:outline-none"
-            >
-              {KATEGORI_GIRLY_OPTIONS.map((k) => (
-                <option key={k.id} value={k.id}>
-                  {k.nama}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-2">
+              <select
+                value={activeSelectedKategoriId}
+                onChange={(e) => setSelectedKategoriId(e.target.value)}
+                className="min-w-0 flex-1 rounded-2xl border border-pink-200 bg-pink-50/30 px-4 py-2.5 text-xs font-bold text-slate-800 focus:border-pink-500 focus:outline-none"
+              >
+                {kategoriOptions.map((k) => (
+                  <option key={k.id} value={k.id}>
+                    {k.nama}
+                  </option>
+                ))}
+                <option value={OTHER_CATEGORY_OPTION_ID}>Lainnya...</option>
+              </select>
+              {kategoriOptions.some((kategori) => kategori.id === activeSelectedKategoriId) && (
+                <button
+                  type="button"
+                  title="Hapus kategori"
+                  aria-label="Hapus kategori"
+                  onClick={() => {
+                    const selectedKategori = kategoriOptions.find(
+                      (kategori) => kategori.id === activeSelectedKategoriId,
+                    );
+                    if (
+                      selectedKategori &&
+                      window.confirm(
+                        `Hapus kategori "${selectedKategori.nama}" dari pilihan? Riwayat lama tetap tersimpan.`,
+                      )
+                    ) {
+                      onDeleteCategory(activeSelectedKategoriId);
+                      setSelectedKategoriId(
+                        kategoriOptions.find(
+                          (kategori) => kategori.id !== activeSelectedKategoriId,
+                        )?.id ?? OTHER_CATEGORY_OPTION_ID,
+                      );
+                    }
+                  }}
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-rose-200 text-rose-500 transition-colors hover:bg-rose-50"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                </button>
+              )}
+            </div>
+            {activeSelectedKategoriId === OTHER_CATEGORY_OPTION_ID && (
+              <input
+                type="text"
+                required
+                maxLength={50}
+                placeholder="Tulis nama kategori baru"
+                value={customKategori}
+                onChange={(e) => setCustomKategori(e.target.value)}
+                className="mt-2 w-full rounded-2xl border border-pink-200 bg-pink-50/30 px-4 py-2.5 text-xs font-bold text-slate-800 focus:border-pink-500 focus:outline-none"
+              />
+            )}
           </div>
 
           <div>

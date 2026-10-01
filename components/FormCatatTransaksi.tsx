@@ -1,15 +1,25 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, ArrowUpRight, ArrowDownLeft, ArrowRightLeft, Sparkles, Heart } from "lucide-react";
+import { X, ArrowUpRight, ArrowDownLeft, ArrowRightLeft, Sparkles, Heart, Trash2 } from "lucide-react";
 import { Dompet, TipeTransaksi } from "@/types";
+import {
+  CategoryOption,
+  CUSTOM_CATEGORY_PREFIX,
+  createOrFindCategoryOption,
+  DEFAULT_CATEGORY_OPTIONS,
+  OTHER_CATEGORY_OPTION_ID,
+} from "@/lib/category-options";
 
 interface Props {
   isOpen: boolean;
   initialData?: { nominal: number; catatan: string; kategoriId: string } | null;
   daftarDompet: Dompet[];
+  kategoriManual: CategoryOption[];
+  kategoriArsip: string[];
   walletsLoaded: boolean;
   onClose: () => void;
+  onDeleteCategory: (categoryId: string) => void;
   onSubmit: (data: {
     tipe: TipeTransaksi;
     nominal: number;
@@ -21,30 +31,47 @@ interface Props {
   }) => void;
 }
 
-const KATEGORI_GIRLY = [
-  { id: "k1", nama: "Coffee & Treats ☕🍰" },
-  { id: "k2", nama: "Self-Care & Cinema 🍿🎟️" },
-  { id: "k3", nama: "Shopping & Skincare 💄👗" },
-  { id: "k4", nama: "Gajian & Income 🌸" },
-  { id: "k5", nama: "Transportasi & Taxi 🚗" },
-  { id: "k6", nama: "Tagihan & Wi-Fi 📑" },
-];
-
 export default function FormCatatTransaksi({
   isOpen,
   initialData,
   daftarDompet,
+  kategoriManual,
+  kategoriArsip,
   walletsLoaded,
   onClose,
+  onDeleteCategory,
   onSubmit,
 }: Props) {
+  const kategoriOptions = [
+    ...DEFAULT_CATEGORY_OPTIONS.filter(
+      (kategori) => !kategoriArsip.includes(kategori.id),
+    ),
+    ...kategoriManual,
+  ];
+  const initialCustomKategoriId = initialData?.kategoriId?.startsWith(CUSTOM_CATEGORY_PREFIX)
+    ? initialData.kategoriId
+    : "";
+  const initialCustomKategoriExists = kategoriOptions.some(
+    (kategori) => kategori.id === initialCustomKategoriId,
+  );
   const [tipe, setTipe] = useState<TipeTransaksi>("expense");
   const [nominal, setNominal] = useState(() =>
     initialData ? String(initialData.nominal) : "",
   );
   const [dompetId, setDompetId] = useState("");
   const [dompetTujuanId, setDompetTujuanId] = useState("");
-  const [kategoriId, setKategoriId] = useState(initialData?.kategoriId ?? "k1");
+  const [kategoriId, setKategoriId] = useState(
+    initialCustomKategoriId && !initialCustomKategoriExists
+      ? OTHER_CATEGORY_OPTION_ID
+      : kategoriOptions.some((kategori) => kategori.id === initialData?.kategoriId)
+        ? initialData?.kategoriId ?? "k1"
+        : kategoriOptions[0]?.id ?? OTHER_CATEGORY_OPTION_ID,
+  );
+  const [customKategori, setCustomKategori] = useState(
+    initialCustomKategoriId
+      ? initialCustomKategoriId.slice(CUSTOM_CATEGORY_PREFIX.length)
+      : "",
+  );
   const [catatan, setCatatan] = useState(initialData?.catatan ?? "");
 
   const walletsWithId = daftarDompet.filter(
@@ -71,7 +98,13 @@ export default function FormCatatTransaksi({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nominal || Number(nominal) <= 0 || !selectedDompetId) return;
+    if (kategoriId === OTHER_CATEGORY_OPTION_ID && !customKategori.trim()) return;
     if (tipe === "transfer" && !selectedDompetTujuanId) return;
+
+    const kategoriManualBaru =
+      kategoriId === OTHER_CATEGORY_OPTION_ID
+        ? createOrFindCategoryOption(customKategori, kategoriOptions)
+        : undefined;
 
     onSubmit({
       tipe,
@@ -79,12 +112,17 @@ export default function FormCatatTransaksi({
       dompetId: selectedDompetId,
       dompetTujuanId:
         tipe === "transfer" ? selectedDompetTujuanId : undefined,
-      kategoriId: tipe !== "transfer" ? kategoriId : undefined,
+      kategoriId:
+        tipe !== "transfer"
+          ? kategoriManualBaru?.id ?? kategoriId
+          : undefined,
       catatan,
       tanggal: new Date(),
     });
 
     setNominal("");
+    setKategoriId(kategoriOptions[0]?.id ?? OTHER_CATEGORY_OPTION_ID);
+    setCustomKategori("");
     setCatatan("");
     onClose();
   };
@@ -225,17 +263,60 @@ export default function FormCatatTransaksi({
                 <label className="text-[11px] font-extrabold uppercase tracking-wider text-pink-500">
                   Kategori
                 </label>
-                <select
-                  value={kategoriId}
-                  onChange={(e) => setKategoriId(e.target.value)}
-                  className="w-full mt-1 p-3 bg-pink-50/30 border border-pink-200 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:border-pink-500"
-                >
-                  {KATEGORI_GIRLY.map((k) => (
-                    <option key={k.id} value={k.id}>
-                      {k.nama}
-                    </option>
-                  ))}
-                </select>
+                <div className="mt-1 space-y-2">
+                  <div className="flex gap-2">
+                    <select
+                      value={kategoriId}
+                      onChange={(e) => setKategoriId(e.target.value)}
+                      className="min-w-0 flex-1 rounded-2xl border border-pink-200 bg-pink-50/30 p-3 text-xs font-bold text-slate-700 focus:border-pink-500 focus:outline-none"
+                    >
+                      {kategoriOptions.map((kategori) => (
+                        <option key={kategori.id} value={kategori.id}>
+                          {kategori.nama}
+                        </option>
+                      ))}
+                      <option value={OTHER_CATEGORY_OPTION_ID}>Lainnya...</option>
+                    </select>
+                    {kategoriOptions.some((kategori) => kategori.id === kategoriId) && (
+                      <button
+                        type="button"
+                        title="Hapus kategori"
+                        aria-label="Hapus kategori"
+                        onClick={() => {
+                          const selectedKategori = kategoriOptions.find(
+                            (kategori) => kategori.id === kategoriId,
+                          );
+                          if (
+                            selectedKategori &&
+                            window.confirm(
+                              `Hapus kategori "${selectedKategori.nama}" dari pilihan? Riwayat lama tetap tersimpan.`,
+                            )
+                          ) {
+                            onDeleteCategory(kategoriId);
+                            setKategoriId(
+                              kategoriOptions.find((kategori) => kategori.id !== kategoriId)?.id ??
+                                OTHER_CATEGORY_OPTION_ID,
+                            );
+                          }
+                        }}
+                        className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-rose-200 text-rose-500 transition-colors hover:bg-rose-50"
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
+                  {kategoriId === OTHER_CATEGORY_OPTION_ID && (
+                    <input
+                      type="text"
+                      value={customKategori}
+                      onChange={(e) => setCustomKategori(e.target.value)}
+                      placeholder="Tulis nama kategori baru"
+                      maxLength={50}
+                      required
+                      className="w-full rounded-2xl border border-pink-200 bg-pink-50/30 p-3 text-xs font-bold text-slate-700 focus:border-pink-500 focus:outline-none"
+                    />
+                  )}
+                </div>
               </div>
             )}
           </div>

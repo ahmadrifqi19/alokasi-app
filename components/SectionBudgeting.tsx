@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { Flame, Sparkles, Heart } from "lucide-react";
+import { Award, Flame, Sparkles, Heart } from "lucide-react";
 import { AnggaranKategori, UserStreak } from "@/types";
+import { getBadgeProgress } from "@/lib/gamification";
 
 interface SectionBudgetingProps {
   streak: UserStreak;
@@ -15,6 +16,7 @@ export default function SectionBudgeting({
   daftarAnggaran,
   onOpenModalLimit,
 }: SectionBudgetingProps) {
+  const badgeProgress = getBadgeProgress(streak.poin);
   const formatRupiah = (angka: number) => {
     return `Rp ${new Intl.NumberFormat("id-ID", {
       maximumFractionDigits: 0,
@@ -27,20 +29,33 @@ export default function SectionBudgeting({
       <div className="flex items-center justify-between gap-3 rounded-2xl border border-pink-200/80 bg-gradient-to-r from-pink-50 via-rose-50 to-fuchsia-50 p-4 shadow-xs">
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-white/80 rounded-2xl border border-pink-100 shadow-2xs">
-            <Flame className="h-5 w-5 text-rose-500 fill-rose-500" aria-hidden="true" />
+            <Award className="h-5 w-5 text-rose-500" aria-hidden="true" />
           </div>
           <div>
             <p className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800">
-              {streak.currentStreak} Hari Rajin Catat Jajan! 🔥
+              <Flame className="h-3.5 w-3.5 text-rose-500" aria-hidden="true" />
+              {streak.currentStreak > 0
+                ? `${streak.currentStreak} Hari Rajin Catat Jajan!`
+                : "Mulai streak catat jajan hari ini!"}
             </p>
-            <p className="mt-0.5 text-[10px] font-semibold text-pink-400">
-              Pertahankan streak keuangan kamu, Babe! ✨
+            <p className="mt-0.5 text-[10px] font-semibold text-pink-500">
+              Badge {streak.badgeLevel}
+              {badgeProgress.nextLevel
+                ? ` · ${badgeProgress.pointsRemaining} poin menuju ${badgeProgress.nextLevel}`
+                : " · Level tertinggi tercapai"}
             </p>
           </div>
         </div>
-        <span className="rounded-full border border-pink-200/80 bg-white/90 px-3 py-1 text-xs font-extrabold text-pink-500 shadow-2xs flex items-center gap-1">
-          <Sparkles className="w-3 h-3 text-pink-400" /> {streak.poin} Poin
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          <span className="rounded-full border border-pink-200/80 bg-white/90 px-3 py-1 text-xs font-extrabold text-pink-500 shadow-2xs flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-pink-400" /> {streak.poin} Poin
+          </span>
+          {badgeProgress.nextLevel && (
+            <span className="text-[9px] font-bold text-pink-400">
+              {badgeProgress.percentage}%
+            </span>
+          )}
+        </div>
       </div>
 
       {/* ANGGARAN BULANAN (BUDGET GUARD) */}

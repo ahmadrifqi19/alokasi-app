@@ -51,9 +51,11 @@ export interface AnggaranKategori {
   terpakai: number;
 }
 
+import type { BadgeLevel } from "@/lib/gamification";
+
 export interface UserStreak {
   currentStreak: number;
   longestStreak: number;
   poin: number;
-  badgeLevel: "Bronze" | "Silver" | "Gold" | "Master";
+  badgeLevel: BadgeLevel;
 }

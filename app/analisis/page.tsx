@@ -21,16 +21,7 @@ import {
   DashboardTransaction,
 } from "@/lib/firestore-sync";
 import { getFinancialInsight } from "@/lib/gemini";
-
-// Helper Mapping Nama Kategori berdasarkan ID Kategori (Girlboss Theme)
-const KATEGORI_MAP: Record<string, string> = {
-  k1: "Coffee & Treats ☕🍰",
-  k2: "Self-Care & Cinema 🍿🎟️",
-  k3: "Shopping & Skincare 💄👗",
-  k4: "Gajian & Income 🌸",
-  k5: "Transportasi & Taxi 🚗",
-  k6: "Tagihan & Wi-Fi 📑",
-};
+import { getCategoryName } from "@/lib/category-options";
 
 export default function AnalisisPage() {
   const { user, loading } = useAuth();
@@ -66,6 +57,10 @@ export default function AnalisisPage() {
   // ------------------------------------------------------------------
   const getNominal = (transaction: DashboardTransaction): number =>
     transaction.nominal;
+  const getNamaKategori = (kategoriId?: string, fallback?: string) =>
+    getCategoryName(kategoriId) ||
+    fallback ||
+    "Jajan Lainnya ✨";
 
   const totalPemasukan = transactions
     .filter((t) => t.tipe === "income")
@@ -81,10 +76,7 @@ export default function AnalisisPage() {
   const pengeluaranPerKategoriMap = transactions
     .filter((t) => t.tipe === "expense")
     .reduce((acc, t) => {
-      const namaKategori =
-        KATEGORI_MAP[t.kategoriId || ""] ||
-        t.catatan ||
-        "Jajan Lainnya ✨";
+      const namaKategori = getNamaKategori(t.kategoriId, t.catatan);
       const nominal = getNominal(t);
       acc[namaKategori] = (acc[namaKategori] || 0) + nominal;
       return acc;
@@ -116,10 +108,7 @@ export default function AnalisisPage() {
       const summaryText = transactions
         .slice(0, 10)
         .map((t) => {
-          const cat =
-            KATEGORI_MAP[t.kategoriId || ""] ||
-            t.catatan ||
-            "Lainnya";
+          const cat = getNamaKategori(t.kategoriId, t.catatan);
           const nom = getNominal(t);
           return `${t.tipe === "expense" ? "Pengeluaran" : "Pemasukan"} ${cat}: Rp${nom}`;
         })
@@ -217,7 +206,7 @@ export default function AnalisisPage() {
               Arus Kas Bulan Ini 📊
             </h2>
             <span className="text-[10px] text-pink-400 font-extrabold">
-              Real-time Firestore
+              Real-time
             </span>
           </div>
 

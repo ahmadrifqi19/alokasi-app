@@ -35,6 +35,10 @@ import {
   subscribeFirebaseBudgets,
   saveFirebaseBudget,
   subscribeFirebaseGoals,
+  subscribeFirebaseUserStreak,
+  subscribeFirebaseArchivedCategories,
+  saveFirebaseCategory,
+  archiveFirebaseCategory,
   saveFirebaseGoal,
   setorKeTargetTabungan,
   DashboardTransaction,
@@ -50,6 +54,11 @@ import CardTargetTabungan from "@/components/CardTargetTabungan";
 import SectionBudgeting from "@/components/SectionBudgeting";
 import ModalExportLaporan from "@/components/ModalExportLaporan";
 import ModalAturLimit from "@/components/ModalAturLimit";
+import {
+  CUSTOM_CATEGORY_PREFIX,
+  DEFAULT_CATEGORY_OPTIONS,
+  getCategoryName,
+} from "@/lib/category-options";
 
 // Import OCR Helper Gemini AI
 import { analyzeReceiptImage } from "@/lib/gemini";
@@ -105,11 +114,15 @@ export default function DashboardAlokasi() {
 
   const [daftarTransaksi, setDaftarTransaksi] = useState<DashboardTransaction[]>([]);
   const [daftarTarget, setDaftarTarget] = useState<TargetTabungan[]>([]);
+  const [archivedCategoryIds, setArchivedCategoryIds] = useState<string[]>([]);
+  const [filterRiwayat, setFilterRiwayat] = useState<"all" | "7days" | "30days" | "custom">("all");
+  const [tanggalMulaiRiwayat, setTanggalMulaiRiwayat] = useState("");
+  const [tanggalAkhirRiwayat, setTanggalAkhirRiwayat] = useState("");
 
-  const [userStreak] = useState<UserStreak>({
-    currentStreak: 1,
-    longestStreak: 1,
-    poin: 50,
+  const [userStreak, setUserStreak] = useState<UserStreak>({
+    currentStreak: 0,
+    longestStreak: 0,
+    poin: 0,
     badgeLevel: "Bronze",
   });
 
@@ -117,6 +130,34 @@ export default function DashboardAlokasi() {
     { id: "b1", kategoriId: "k1", namaKategori: "Coffee & Treats ☕🍰", limitBulanan: 1500000, terpakai: 0 },
     { id: "b2", kategoriId: "k2", namaKategori: "Shopping & Skincare 💄👗", limitBulanan: 500000, terpakai: 0 },
   ]);
+
+  const kategoriManualMap = new Map<string, string>();
+  const archivedCategorySet = new Set(archivedCategoryIds);
+  daftarTransaksi.forEach((transaksi) => {
+    const kategoriId = transaksi.kategoriId || "";
+    if (
+      kategoriId.startsWith(CUSTOM_CATEGORY_PREFIX) &&
+      !archivedCategorySet.has(kategoriId)
+    ) {
+      kategoriManualMap.set(
+        kategoriId,
+        kategoriId.slice(CUSTOM_CATEGORY_PREFIX.length),
+      );
+    }
+  });
+  daftarAnggaran.forEach((anggaran) => {
+    if (
+      anggaran.kategoriId.startsWith(CUSTOM_CATEGORY_PREFIX) &&
+      !archivedCategorySet.has(anggaran.kategoriId) &&
+      !kategoriManualMap.has(anggaran.kategoriId)
+    ) {
+      kategoriManualMap.set(anggaran.kategoriId, anggaran.namaKategori);
+    }
+  });
+  const kategoriManual = Array.from(kategoriManualMap, ([id, nama]) => ({ id, nama }));
+  const daftarAnggaranAktif = daftarAnggaran.filter(
+    (anggaran) => !archivedCategorySet.has(anggaran.kategoriId),
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -137,12 +178,21 @@ export default function DashboardAlokasi() {
     const unsubGoals = subscribeFirebaseGoals(user.uid, (goals) => {
       setDaftarTarget(goals);
     });
+    const unsubStreak = subscribeFirebaseUserStreak(user.uid, (streak) => {
+      setUserStreak(streak);
+    });
+    const unsubArchivedCategories = subscribeFirebaseArchivedCategories(
+      user.uid,
+      setArchivedCategoryIds,
+    );
 
     return () => {
       unsubTrans();
       unsubWallets();
       unsubBudgets();
       unsubGoals();
+      unsubStreak();
+      unsubArchivedCategories();
     };
   }, [user]);
 
@@ -168,6 +218,22 @@ export default function DashboardAlokasi() {
   const getNamaDompet = (id: string) => {
     return daftarDompet.find((d) => d.id === id)?.nama || "Dompet";
   };
+
+  const getPengeluaranKategoriBulanIni = (
+    kategoriId: string,
+    referenceDate: Date,
+  ) =>
+    daftarTransaksi
+      .filter((transaksi) => {
+        const tanggal = transaksi.tanggalObj;
+        return (
+          transaksi.tipe === "expense" &&
+          transaksi.kategoriId === kategoriId &&
+          tanggal.getMonth() === referenceDate.getMonth() &&
+          tanggal.getFullYear() === referenceDate.getFullYear()
+        );
+      })
+      .reduce((total, transaksi) => total + transaksi.nominal, 0);
 
   // ----------------------------------------------------
   // 4. HANDLERS TRANSAKSI SINKRONISASI & SETOR TABUNGAN
@@ -277,6 +343,12 @@ export default function DashboardAlokasi() {
     tanggal: Date;
   }) => {
     if (!user) return;
+    if (data.kategoriId?.startsWith(CUSTOM_CATEGORY_PREFIX)) {
+      setArchivedCategoryIds((current) =>
+        current.filter((kategoriId) => kategoriId !== data.kategoriId),
+      );
+      await saveFirebaseCategory(user.uid, data.kategoriId);
+    }
 
     const updatedDompet = daftarDompet.map((dompet) => {
       if (dompet.id === data.dompetId) {
@@ -310,7 +382,9 @@ export default function DashboardAlokasi() {
     if (data.tipe === "expense" && data.kategoriId) {
       const updatedAnggaran = daftarAnggaran.map((ang) => {
         if (ang.kategoriId === data.kategoriId) {
-          const newTerpakai = ang.terpakai + data.nominal;
+          const newTerpakai =
+            getPengeluaranKategoriBulanIni(data.kategoriId, data.tanggal) +
+            data.nominal;
           const updatedItem = { ...ang, terpakai: newTerpakai };
           saveFirebaseBudget(user.uid, updatedItem);
           return updatedItem;
@@ -346,12 +420,27 @@ export default function DashboardAlokasi() {
     limitBulanan: number;
   }) => {
     if (!user) return;
+    if (data.kategoriId.startsWith(CUSTOM_CATEGORY_PREFIX)) {
+      setArchivedCategoryIds((current) =>
+        current.filter((kategoriId) => kategoriId !== data.kategoriId),
+      );
+      await saveFirebaseCategory(user.uid, data.kategoriId);
+    }
 
+    const sekarang = new Date();
+    const terpakaiBulanIni = getPengeluaranKategoriBulanIni(
+      data.kategoriId,
+      sekarang,
+    );
     let targetItem: AnggaranKategori | undefined;
 
     const updatedList = daftarAnggaran.map((ang) => {
       if (ang.kategoriId === data.kategoriId) {
-        targetItem = { ...ang, limitBulanan: data.limitBulanan };
+        targetItem = {
+          ...ang,
+          limitBulanan: data.limitBulanan,
+          terpakai: terpakaiBulanIni,
+        };
         return targetItem;
       }
       return ang;
@@ -363,7 +452,7 @@ export default function DashboardAlokasi() {
         kategoriId: data.kategoriId,
         namaKategori: data.namaKategori,
         limitBulanan: data.limitBulanan,
-        terpakai: 0,
+        terpakai: terpakaiBulanIni,
       };
       updatedList.push(targetItem);
     }
@@ -372,10 +461,46 @@ export default function DashboardAlokasi() {
     await saveFirebaseBudget(user.uid, targetItem);
   };
 
+  const handleHapusKategori = async (kategoriId: string) => {
+    const isDefaultCategory = DEFAULT_CATEGORY_OPTIONS.some(
+      (kategori) => kategori.id === kategoriId,
+    );
+    if (!user || (!isDefaultCategory && !kategoriManualMap.has(kategoriId))) return;
+    setArchivedCategoryIds((current) =>
+      current.includes(kategoriId) ? current : [...current, kategoriId],
+    );
+    await archiveFirebaseCategory(user.uid, kategoriId);
+  };
+
   const handleLogout = async () => {
     await logout();
     router.push("/login");
   };
+
+  const now = new Date();
+  const awalHariIni = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const transaksiTerfilter = daftarTransaksi.filter((transaksi) => {
+    if (filterRiwayat === "all") return true;
+
+    if (filterRiwayat === "7days" || filterRiwayat === "30days") {
+      const jumlahHari = filterRiwayat === "7days" ? 7 : 30;
+      const tanggalMulai = new Date(awalHariIni);
+      tanggalMulai.setDate(tanggalMulai.getDate() - jumlahHari + 1);
+      return transaksi.tanggalObj >= tanggalMulai;
+    }
+
+    const tanggal = transaksi.tanggalObj;
+    if (tanggalMulaiRiwayat) {
+      const batasMulai = new Date(`${tanggalMulaiRiwayat}T00:00:00`);
+      if (tanggal < batasMulai) return false;
+    }
+    if (tanggalAkhirRiwayat) {
+      const batasAkhir = new Date(`${tanggalAkhirRiwayat}T00:00:00`);
+      batasAkhir.setDate(batasAkhir.getDate() + 1);
+      if (tanggal >= batasAkhir) return false;
+    }
+    return true;
+  });
 
   if (loading || !user) {
     return (
@@ -425,7 +550,7 @@ export default function DashboardAlokasi() {
             )}
             <div>
               <p className="text-[11px] font-semibold text-pink-400 flex items-center gap-1">
-                Halo Cantik! <Heart className="w-3 h-3 fill-pink-400 text-pink-400" />
+                Halo! <Heart className="w-3 h-3 fill-pink-400 text-pink-400" />
               </p>
               <h1 className="text-base font-extrabold text-slate-800 leading-tight">
                 {user.displayName || "Girlboss Alokasi"}
@@ -530,7 +655,7 @@ export default function DashboardAlokasi() {
         <section className="bg-white/80 backdrop-blur-2xl p-5 rounded-[2rem] shadow-xs border border-pink-100/80 space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <Wallet className="w-4 h-4 text-pink-500" /> Dompet & E-Wallet Cantik
+              <Wallet className="w-4 h-4 text-pink-500" /> Dompet & E-Wallet
             </h2>
             <button onClick={() => setIsModalDompetOpen(true)} className="text-xs font-extrabold text-pink-500 hover:text-pink-600">
               Kelola
@@ -582,7 +707,7 @@ export default function DashboardAlokasi() {
         {/* BUDGETING */}
         <SectionBudgeting
           streak={userStreak}
-          daftarAnggaran={daftarAnggaran}
+          daftarAnggaran={daftarAnggaranAktif}
           onOpenModalLimit={() => setIsModalLimitOpen(true)}
         />
 
@@ -621,19 +746,74 @@ export default function DashboardAlokasi() {
           </div>
         </section>
 
-        {/* TRANSAKSI TERAKHIR */}
+        {/* RIWAYAT TRANSAKSI */}
         <section>
           <div className="flex justify-between items-center mb-3 px-1">
-            <h2 className="text-xs font-black text-pink-400 uppercase tracking-widest">Riwayat Jajan Terakhir 📝</h2>
+            <h2 className="text-xs font-black text-pink-400 uppercase tracking-widest">Riwayat Transaksi 📝</h2>
+            <span className="text-[10px] font-bold text-pink-400">
+              {transaksiTerfilter.length} transaksi
+            </span>
           </div>
+
+          <div className="mb-3 grid grid-cols-4 gap-1 rounded-2xl border border-pink-100 bg-white/80 p-1">
+            {([
+              ["all", "Semua"],
+              ["7days", "7 hari"],
+              ["30days", "30 hari"],
+              ["custom", "Tanggal"],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setFilterRiwayat(value)}
+                aria-pressed={filterRiwayat === value}
+                className={`rounded-xl px-1.5 py-2 text-[10px] font-extrabold transition-colors ${
+                  filterRiwayat === value
+                    ? "bg-pink-500 text-white shadow-sm"
+                    : "text-pink-400 hover:bg-pink-50 hover:text-pink-600"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {filterRiwayat === "custom" && (
+            <div className="mb-3 grid grid-cols-2 gap-3 rounded-2xl border border-pink-100 bg-white/80 p-3">
+              <label className="text-[10px] font-bold text-pink-500">
+                Dari tanggal
+                <input
+                  type="date"
+                  value={tanggalMulaiRiwayat}
+                  onChange={(e) => setTanggalMulaiRiwayat(e.target.value)}
+                  aria-label="Tanggal mulai riwayat"
+                  className="mt-1 w-full min-w-0 rounded-xl border border-pink-200 bg-pink-50/30 px-2 py-2 text-xs text-slate-700 focus:border-pink-500 focus:outline-none"
+                />
+              </label>
+              <label className="text-[10px] font-bold text-pink-500">
+                Sampai tanggal
+                <input
+                  type="date"
+                  value={tanggalAkhirRiwayat}
+                  onChange={(e) => setTanggalAkhirRiwayat(e.target.value)}
+                  aria-label="Tanggal akhir riwayat"
+                  className="mt-1 w-full min-w-0 rounded-xl border border-pink-200 bg-pink-50/30 px-2 py-2 text-xs text-slate-700 focus:border-pink-500 focus:outline-none"
+                />
+              </label>
+            </div>
+          )}
 
           <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-xs border border-pink-100/80 divide-y divide-pink-50 overflow-hidden">
             {daftarTransaksi.length === 0 ? (
               <div className="p-6 text-center text-xs text-pink-400 font-semibold">
                 Masih bersih nih, belum ada jajan hari ini~ ✨
               </div>
+            ) : transaksiTerfilter.length === 0 ? (
+              <div className="p-6 text-center text-xs text-pink-400 font-semibold">
+                Tidak ada transaksi pada periode tanggal ini.
+              </div>
             ) : (
-              daftarTransaksi.map((item) => (
+              transaksiTerfilter.map((item) => (
                 <div key={item.id} className="p-3.5 flex items-center justify-between hover:bg-pink-50/30 transition-colors">
                   <div className="flex items-center gap-3.5">
                     <div
@@ -655,6 +835,7 @@ export default function DashboardAlokasi() {
                       </p>
                       <p className="text-[10px] text-pink-400 font-semibold mt-0.5">
                         {getNamaDompet(item.dompetId)} • {item.tanggalStr}
+                        {item.kategoriId && ` • ${getCategoryName(item.kategoriId, kategoriManual)}`}
                       </p>
                     </div>
                   </div>
@@ -773,7 +954,10 @@ export default function DashboardAlokasi() {
         isOpen={isModalTransaksiOpen}
         initialData={receiptDraft}
         daftarDompet={daftarDompet}
+        kategoriManual={kategoriManual}
+        kategoriArsip={archivedCategoryIds}
         walletsLoaded={!isLoadingWallets}
+        onDeleteCategory={(kategoriId) => void handleHapusKategori(kategoriId)}
         onClose={() => {
           setIsModalTransaksiOpen(false);
           setReceiptDraft(null);
@@ -816,10 +1000,14 @@ export default function DashboardAlokasi() {
         onClose={() => setIsModalExportOpen(false)}
         daftarTransaksi={daftarTransaksi}
         daftarDompet={daftarDompet}
+        kategoriManual={kategoriManual}
       />
       <ModalAturLimit
         isOpen={isModalLimitOpen}
+        kategoriManual={kategoriManual}
+        kategoriArsip={archivedCategoryIds}
         onClose={() => setIsModalLimitOpen(false)}
+        onDeleteCategory={(kategoriId) => void handleHapusKategori(kategoriId)}
         onTambahLimit={handleTambahLimit}
       />
     </main>

@@ -15,7 +15,13 @@ import type {
   Dompet,
   TipeDompet,
   TipeTransaksi,
+  UserStreak,
 } from "@/types";
+import {
+  CUSTOM_CATEGORY_PREFIX,
+  DEFAULT_CATEGORY_OPTIONS,
+} from "@/lib/category-options";
+import { getBadgeLevel, getLocalDateKey } from "@/lib/gamification";
 export type { DashboardTransaction } from "@/types";
 
 export interface TargetTabungan {
@@ -34,14 +40,9 @@ export interface SetorTabunganParams {
   nominal: number;
 }
 
-const KATEGORI_NAMA: Record<string, string> = {
-  k1: "Makanan & Kopi",
-  k2: "Hiburan & Nonton",
-  k3: "Belanja",
-  k4: "Kebutuhan Harian",
-  k5: "Transportasi",
-  k6: "Tagihan & Utilitas",
-};
+const KATEGORI_NAMA = Object.fromEntries(
+  DEFAULT_CATEGORY_OPTIONS.map(({ id, nama }) => [id, nama]),
+);
 
 function toDate(value: unknown): Date {
   if (value instanceof Date) return value;
@@ -79,7 +80,7 @@ function toTransaction(
   const kategoriRaw = value.kategoriId ?? value.kategori ?? value.category;
   const kategoriId =
     typeof kategoriRaw === "string"
-      ? Object.keys(KATEGORI_NAMA).includes(kategoriRaw)
+      ? kategoriRaw in KATEGORI_NAMA || kategoriRaw.startsWith(CUSTOM_CATEGORY_PREFIX)
         ? kategoriRaw
         : undefined
       : undefined;
@@ -166,6 +167,109 @@ export async function saveFirebaseTransaction(
     },
     { merge: true },
   );
+  try {
+    await recordFirebaseUserActivity(userId);
+  } catch (error) {
+    console.error("Gagal memperbarui badge pengguna:", error);
+  }
+}
+
+export function subscribeFirebaseArchivedCategories(
+  userId: string,
+  callback: (categoryIds: string[]) => void,
+) {
+  const ref = collection(db, "users", userId, "categories");
+  return onSnapshot(ref, (snapshot) => {
+    const archivedIds = snapshot.docs
+      .filter((categoryDoc) => categoryDoc.data().archived === true)
+      .map((categoryDoc) => {
+        const categoryId = categoryDoc.data().categoryId;
+        return typeof categoryId === "string"
+          ? categoryId
+          : decodeURIComponent(categoryDoc.id);
+      });
+    callback(archivedIds);
+  });
+}
+
+export async function saveFirebaseCategory(userId: string, categoryId: string) {
+  const ref = doc(
+    db,
+    "users",
+    userId,
+    "categories",
+    encodeURIComponent(categoryId),
+  );
+  await setDoc(ref, { categoryId, archived: false }, { merge: true });
+}
+
+export async function archiveFirebaseCategory(userId: string, categoryId: string) {
+  const ref = doc(
+    db,
+    "users",
+    userId,
+    "categories",
+    encodeURIComponent(categoryId),
+  );
+  await setDoc(ref, { categoryId, archived: true }, { merge: true });
+}
+
+export function subscribeFirebaseUserStreak(
+  userId: string,
+  callback: (streak: UserStreak) => void,
+) {
+  const streakRef = doc(db, "users", userId, "gamification", "streak");
+
+  return onSnapshot(streakRef, (snapshot) => {
+    const data = snapshot.data();
+    const poin = typeof data?.poin === "number" ? data.poin : 0;
+    callback({
+      currentStreak:
+        typeof data?.currentStreak === "number" ? data.currentStreak : 0,
+      longestStreak:
+        typeof data?.longestStreak === "number" ? data.longestStreak : 0,
+      poin,
+      badgeLevel: getBadgeLevel(poin),
+    });
+  });
+}
+
+export async function recordFirebaseUserActivity(
+  userId: string,
+  activityDate = new Date(),
+) {
+  const streakRef = doc(db, "users", userId, "gamification", "streak");
+  const today = getLocalDateKey(activityDate);
+  const yesterdayDate = new Date(activityDate);
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterday = getLocalDateKey(yesterdayDate);
+
+  await runTransaction(db, async (transaction) => {
+    const streakSnapshot = await transaction.get(streakRef);
+    const data = streakSnapshot.data();
+    if (data?.lastActivityDate === today) return;
+
+    const previousStreak =
+      typeof data?.currentStreak === "number" ? data.currentStreak : 0;
+    const previousLongestStreak =
+      typeof data?.longestStreak === "number" ? data.longestStreak : 0;
+    const currentStreak =
+      data?.lastActivityDate === yesterday ? previousStreak + 1 : 1;
+    const poin = (typeof data?.poin === "number" ? data.poin : 0) + 10 +
+      (currentStreak % 7 === 0 ? 25 : 0);
+
+    transaction.set(
+      streakRef,
+      {
+        currentStreak,
+        longestStreak: Math.max(previousLongestStreak, currentStreak),
+        poin,
+        badgeLevel: getBadgeLevel(poin),
+        lastActivityDate: today,
+      },
+      { merge: true },
+    );
+  });
 }
 
 export async function deleteFirebaseTransaction(
@@ -278,6 +382,11 @@ export async function saveFirebaseBudget(
   );
 }
 
+export async function deleteFirebaseBudget(userId: string, categoryId: string) {
+  const ref = doc(db, "users", userId, "budgets", categoryId);
+  await deleteDoc(ref);
+}
+
 // ==========================================
 // 4. TARGET TABUNGAN / GOALS LISTENERS & ACTIONS
 // ==========================================
@@ -352,6 +461,11 @@ export async function setorKeTargetTabungan({
       createdAt: serverTimestamp(),
     });
   });
+  try {
+    await recordFirebaseUserActivity(userId);
+  } catch (error) {
+    console.error("Gagal memperbarui badge pengguna:", error);
+  }
 }
 
 // ==========================================
@@ -359,7 +473,14 @@ export async function setorKeTargetTabungan({
 // ==========================================
 
 export async function resetUserDataToZero(userId: string) {
-  const collectionsToReset = ["transactions", "budgets", "goals", "wallets"];
+  const collectionsToReset = [
+    "transactions",
+    "budgets",
+    "categories",
+    "gamification",
+    "goals",
+    "wallets",
+  ];
 
   for (const colName of collectionsToReset) {
     const colRef = collection(db, "users", userId, colName);
