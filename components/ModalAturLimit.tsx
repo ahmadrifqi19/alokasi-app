@@ -46,7 +46,9 @@ export default function ModalAturLimit({
     (kategori) => kategori.id === selectedKategoriId,
   )
     ? selectedKategoriId
-    : kategoriOptions[0]?.id ?? OTHER_CATEGORY_OPTION_ID;
+    : selectedKategoriId === OTHER_CATEGORY_OPTION_ID
+      ? OTHER_CATEGORY_OPTION_ID
+      : kategoriOptions[0]?.id ?? OTHER_CATEGORY_OPTION_ID;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

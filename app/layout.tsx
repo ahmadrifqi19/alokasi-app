@@ -14,13 +14,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alokasi - Catatan Keuangan",
-  description: "Catat transaksi, pantau anggaran, dan kelola keuangan harian.",
+  title: "Alokasi - Financial Tracker Cantik ✨",
+  description: "Catat jajan, pantau anggaran, dan kelola keuangan harian kamu dengan estetik 🌸",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Alokasi",
+  },
 };
 
 export const viewport: Viewport = {
+  themeColor: "#EC4899",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -33,7 +42,11 @@ export default function RootLayout({
       lang="id"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900">
+      <head>
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/assets/LOGO.png" />
+      </head>
+      <body className="min-h-full flex flex-col bg-[#FFF0F5] text-slate-900 select-none">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

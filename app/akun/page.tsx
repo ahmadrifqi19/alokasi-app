@@ -354,7 +354,7 @@ export default function ProfilePage() {
                 <User className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-extrabold text-slate-800">Ubah Profil Cantik</p>
+                <p className="text-xs font-extrabold text-slate-800">Ubah Profil</p>
                 <p className="text-[10px] font-semibold text-pink-400">Nama lengkap & foto avatar kamu</p>
               </div>
             </div>
