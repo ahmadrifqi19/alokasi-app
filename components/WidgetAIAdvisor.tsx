@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Sparkles, Camera, RefreshCw } from "lucide-react";
 import { analyzeReceiptImage, getFinancialInsight } from "@/lib/gemini";
+import { COPY } from "@/lib/copy";
 
 async function compressImage(
   file: File,
@@ -19,13 +20,13 @@ async function compressImage(
 
     const context = canvas.getContext("2d");
     if (!context) {
-      throw new Error("Browser tidak dapat memproses gambar ini.");
+      throw new Error(COPY.receipt.failed);
     }
 
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     const [, base64] = canvas.toDataURL("image/jpeg", quality).split(",", 2);
     if (!base64) {
-      throw new Error("Gagal menyiapkan gambar struk.");
+      throw new Error(COPY.receipt.failed);
     }
 
     return { base64, mimeType: "image/jpeg" };
@@ -41,7 +42,7 @@ interface Props {
 
 export default function WidgetAIAdvisor({ onScanResult, transaksiSummary }: Props) {
   const [insight, setInsight] = useState<string>(
-    "Ringkasan saran keuangan akan muncul di sini."
+    COPY.analysis.insightInitial
   );
   const [loadingInsight, setLoadingInsight] = useState(false);
   const [loadingOCR, setLoadingOCR] = useState(false);
@@ -62,7 +63,7 @@ export default function WidgetAIAdvisor({ onScanResult, transaksiSummary }: Prop
       });
     } catch (error) {
       console.error("Gagal membaca struk:", error);
-      alert(error instanceof Error ? error.message : String(error));
+      alert(COPY.receipt.failed);
     } finally {
       setLoadingOCR(false);
     }
@@ -91,7 +92,7 @@ export default function WidgetAIAdvisor({ onScanResult, transaksiSummary }: Prop
               <Sparkles className="h-4 w-4" aria-hidden="true" />
             </div>
             <h3 className="text-xs font-semibold tracking-tight text-slate-800">
-              Insight keuangan
+              {COPY.analysis.insight}
             </h3>
           </div>
           <button
@@ -100,7 +101,7 @@ export default function WidgetAIAdvisor({ onScanResult, transaksiSummary }: Prop
             className="flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1.5 text-[10px] font-semibold text-slate-700 transition-colors hover:bg-slate-200 disabled:opacity-50"
           >
             <RefreshCw className={`w-3 h-3 ${loadingInsight ? "animate-spin" : ""}`} />
-            Analisis
+            {COPY.analysis.requestInsight}
           </button>
         </div>
 
@@ -113,7 +114,7 @@ export default function WidgetAIAdvisor({ onScanResult, transaksiSummary }: Prop
       <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-3 transition-colors hover:border-blue-400">
         <Camera className="w-4 h-4 text-blue-600" />
         <span className="text-xs font-bold text-slate-700">
-          {loadingOCR ? "Membaca Struk..." : "Scan Struk Belanja (Auto-Fill OCR)"}
+          {loadingOCR ? COPY.receipt.reading : COPY.receipt.upload}
         </span>
         <input
           type="file"

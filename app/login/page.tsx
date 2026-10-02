@@ -3,9 +3,10 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, Loader2, Mail, Lock, User, ArrowRight, Heart, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail, Lock, User, ArrowRight, Sparkles } from "lucide-react";
 import { FirebaseError } from "firebase/app";
 import Image from "next/image";
+import { COPY } from "@/lib/copy";
 
 export default function LoginPage() {
   const { user, loginWithGoogle, loginWithEmail, registerWithEmail, loading } = useAuth();
@@ -39,15 +40,15 @@ export default function LoginPage() {
 
     if (mode === "register") {
       if (!name.trim()) {
-        setErrorMsg("Nama lengkap wajib diisi ya, Cantik!");
+        setErrorMsg(COPY.auth.nameRequired);
         return;
       }
       if (password !== confirmPassword) {
-        setErrorMsg("Konfirmasi password tidak cocok nih, Babe.");
+        setErrorMsg(COPY.auth.passwordMismatch);
         return;
       }
       if (password.length < 6) {
-        setErrorMsg("Password minimal 6 karakter ya.");
+        setErrorMsg(COPY.auth.shortPassword);
         return;
       }
     }
@@ -68,15 +69,15 @@ export default function LoginPage() {
         code === "auth/wrong-password" ||
         code === "auth/user-not-found"
       ) {
-        setErrorMsg("Email atau password kamu salah nih, coba cek lagi ya.");
+        setErrorMsg(COPY.auth.loginFailed);
       } else if (code === "auth/email-already-in-use") {
-        setErrorMsg("Email sudah terdaftar. Silakan lakukan Masuk (Login).");
+        setErrorMsg(COPY.auth.emailInUse);
       } else if (code === "auth/invalid-email") {
-        setErrorMsg("Format email tidak valid.");
+        setErrorMsg(COPY.auth.invalidEmail);
       } else if (code === "auth/operation-not-allowed") {
-        setErrorMsg("Metode email/password belum diaktifkan di Firebase Console.");
+        setErrorMsg(COPY.auth.emailMethodUnavailable);
       } else {
-        setErrorMsg("Terjadi kesalahan. Silakan coba beberapa saat lagi ya.");
+        setErrorMsg(COPY.auth.authError);
       }
     } finally {
       setIsSubmitting(false);
@@ -88,7 +89,7 @@ export default function LoginPage() {
       <div className="flex min-h-screen items-center justify-center bg-[#FFF0F5] text-pink-500">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
-          <p className="text-xs font-semibold text-pink-400">Memuat Alokasi Cantik...</p>
+          <p className="text-xs font-semibold text-pink-400">{COPY.auth.loading}</p>
         </div>
       </div>
     );
@@ -114,14 +115,16 @@ export default function LoginPage() {
             />
           </div>
 
-          <p className="text-xs font-bold text-pink-400 max-w-xs mx-auto flex items-center justify-center gap-1">
+          <p className="text-xs font-bold text-pink-400 max-w-xs mx-auto flex flex-col items-center justify-center gap-1">
             {mode === "login" ? (
               <>
-                Halo Cantik! Masuk dulu yuk <Heart className="w-3.5 h-3.5 fill-pink-400 text-pink-400" />
+                <span>{COPY.auth.loginTitle}</span>
+                <span>{COPY.auth.loginSubtitle}</span>
               </>
             ) : (
               <>
-                Buat akun Alokasi biar jajan makin tertata! ✨
+                <span>{COPY.auth.registerTitle}</span>
+                <span>{COPY.auth.registerSubtitle}</span>
               </>
             )}
           </p>
@@ -141,7 +144,7 @@ export default function LoginPage() {
                 : "text-pink-300 hover:text-pink-400"
             }`}
           >
-            Masuk 💕
+            {COPY.auth.login}
           </button>
           <button
             type="button"
@@ -155,7 +158,7 @@ export default function LoginPage() {
                 : "text-pink-300 hover:text-pink-400"
             }`}
           >
-            Daftar Akun ✨
+            {COPY.auth.register}
           </button>
         </div>
 
@@ -171,7 +174,7 @@ export default function LoginPage() {
           {mode === "register" && (
             <div>
               <label className="block text-xs font-extrabold text-pink-500 mb-1">
-                Nama Lengkap
+                {COPY.auth.name}
               </label>
               <div className="relative">
                 <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-pink-300" />
@@ -180,7 +183,7 @@ export default function LoginPage() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Nama Cantik Kamu"
+                  placeholder={COPY.auth.namePlaceholder}
                   className="w-full rounded-2xl border border-pink-200 bg-pink-50/30 pl-10 pr-4 py-2.5 text-xs font-bold text-slate-800 placeholder-pink-200 focus:border-pink-500 focus:bg-white focus:outline-none transition-all"
                 />
               </div>
@@ -189,7 +192,7 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-xs font-extrabold text-pink-500 mb-1">
-              Email
+              {COPY.auth.email}
             </label>
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-pink-300" />
@@ -198,7 +201,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="nama@email.com"
+                placeholder={COPY.auth.emailPlaceholder}
                 className="w-full rounded-2xl border border-pink-200 bg-pink-50/30 pl-10 pr-4 py-2.5 text-xs font-bold text-slate-800 placeholder-pink-200 focus:border-pink-500 focus:bg-white focus:outline-none transition-all"
               />
             </div>
@@ -206,7 +209,7 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-xs font-extrabold text-pink-500 mb-1">
-              Password
+              {COPY.auth.password}
             </label>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-pink-300" />
@@ -222,7 +225,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-pink-300 hover:text-pink-500 transition-colors"
-                title={showPassword ? "Sembunyikan Password" : "Lihat Password"}
+                title={showPassword ? COPY.auth.hidePassword : COPY.auth.showPassword}
               >
                 {showPassword ? (
                   <EyeOff className="w-4 h-4" />
@@ -236,7 +239,7 @@ export default function LoginPage() {
           {mode === "register" && (
             <div>
               <label className="block text-xs font-extrabold text-pink-500 mb-1">
-                Konfirmasi Password
+                {COPY.auth.confirmPassword}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-pink-300" />
@@ -254,8 +257,8 @@ export default function LoginPage() {
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-pink-300 hover:text-pink-500 transition-colors"
                   title={
                     showConfirmPassword
-                      ? "Sembunyikan Password"
-                      : "Lihat Password"
+                      ? COPY.auth.hidePassword
+                      : COPY.auth.showPassword
                   }
                 >
                   {showConfirmPassword ? (
@@ -278,7 +281,7 @@ export default function LoginPage() {
             ) : (
               <>
                 <Sparkles className="w-4 h-4 text-pink-100" />
-                <span>{mode === "login" ? "Masuk ke Akun ✨" : "Daftar Akun Sekarang 🌸"}</span>
+                <span>{mode === "login" ? COPY.auth.login : COPY.auth.register}</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -288,7 +291,7 @@ export default function LoginPage() {
         <div className="relative flex items-center justify-center my-3">
           <div className="w-full border-t border-pink-100"></div>
           <span className="absolute bg-white px-3 text-[10px] font-extrabold text-pink-300 uppercase tracking-wider">
-            atau
+            {COPY.auth.or}
           </span>
         </div>
 
@@ -316,7 +319,7 @@ export default function LoginPage() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
             />
           </svg>
-          Lanjutkan dengan Google 💕
+          {COPY.auth.google}
         </button>
       </div>
     </main>

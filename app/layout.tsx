@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
+import { COPY } from "@/lib/copy";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alokasi - Financial Tracker Cantik ✨",
-  description: "Catat jajan, pantau anggaran, dan kelola keuangan harian kamu dengan estetik 🌸",
+  title: COPY.common.appName,
+  description: COPY.common.appDescription,
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

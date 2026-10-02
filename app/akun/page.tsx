@@ -30,6 +30,7 @@ import {
 } from "@/lib/firestore-sync";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { COPY, formatTanggalIndonesia } from "@/lib/copy";
 
 // Helper Kompresi Gambar ke Avatar Small Base64 (Max 150px agar sangat ringan)
 async function compressImageFile(file: File, maxWidth = 150, quality = 0.6): Promise<string> {
@@ -151,7 +152,7 @@ export default function ProfilePage() {
       setPreviewPhoto(compressedBase64);
     } catch (error) {
       console.error("Gagal memproses gambar:", error);
-      alert("Gagal membaca file gambar. Silakan coba file lain ya, Babe!");
+      alert(COPY.account.imageError);
     }
   };
 
@@ -163,11 +164,11 @@ export default function ProfilePage() {
 
     try {
       await updateUserProfile(newName, previewPhoto);
-      setProfileMsg({ text: "Profil cantik kamu berhasil disimpan! ✨", type: "success" });
+      setProfileMsg({ text: COPY.account.profileSaved, type: "success" });
       setTimeout(() => setIsEditProfileOpen(false), 1200);
-    } catch (error: unknown) {
+    } catch {
       setProfileMsg({
-        text: error instanceof Error ? error.message : "Gagal memperbarui profil.",
+        text: COPY.account.profileError,
         type: "error",
       });
     } finally {
@@ -181,24 +182,24 @@ export default function ProfilePage() {
     setSecurityMsg({ text: "", type: "" });
 
     if (newPassword !== confirmPassword) {
-      setSecurityMsg({ text: "Konfirmasi password tidak cocok nih, Babe.", type: "error" });
+      setSecurityMsg({ text: COPY.auth.passwordMismatch, type: "error" });
       return;
     }
     if (newPassword.length < 6) {
-      setSecurityMsg({ text: "Password minimal 6 karakter ya.", type: "error" });
+      setSecurityMsg({ text: COPY.auth.shortPassword, type: "error" });
       return;
     }
 
     setIsSavingPassword(true);
     try {
       await updateUserPassword(newPassword);
-      setSecurityMsg({ text: "Password berhasil diperbarui! ✨", type: "success" });
+      setSecurityMsg({ text: COPY.account.passwordSaved, type: "success" });
       setNewPassword("");
       setConfirmPassword("");
       setTimeout(() => setIsSecurityOpen(false), 1200);
     } catch {
       setSecurityMsg({
-        text: "Gagal memperbarui password. Coba login ulang terlebih dahulu.",
+        text: COPY.account.passwordError,
         type: "error",
       });
     } finally {
@@ -214,21 +215,21 @@ export default function ProfilePage() {
 
     try {
       await resetUserDataToZero(user.uid);
-      setResetMsg({ text: "Semua data berhasil direset ke nol! ✨", type: "success" });
+      setResetMsg({ text: COPY.account.resetSuccess, type: "success" });
       setTimeout(() => {
         setIsResetModalOpen(false);
         setResetMsg({ text: "", type: "" });
       }, 1500);
     } catch (error) {
       console.error("Gagal reset data:", error);
-      setResetMsg({ text: "Gagal mereset data. Silakan coba lagi.", type: "error" });
+      setResetMsg({ text: COPY.account.resetError, type: "error" });
     } finally {
       setIsResetting(false);
     }
   };
 
   const handleLogout = async () => {
-    if (confirm("Apakah kamu yakin ingin keluar dari akun, Babe? 💕")) {
+    if (confirm(COPY.account.logoutConfirm)) {
       await logout();
       router.push("/login");
     }
@@ -239,7 +240,7 @@ export default function ProfilePage() {
       <div className="flex min-h-screen items-center justify-center bg-[#FFF0F5] text-pink-500">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
-          <p className="text-xs font-semibold text-pink-400">Memuat Profil Cantik Kamu...</p>
+          <p className="text-xs font-semibold text-pink-400">{COPY.account.loading}</p>
         </div>
       </div>
     );
@@ -248,12 +249,8 @@ export default function ProfilePage() {
   const userAvatar = previewPhoto || user.customPhotoURL || user.photoURL;
 
   const createdAtFormatted = user.metadata.creationTime
-    ? new Date(user.metadata.creationTime).toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : "Member Cantik";
+    ? formatTanggalIndonesia(new Date(user.metadata.creationTime))
+    : COPY.account.memberFallback;
 
   return (
     <main className="relative mx-auto min-h-screen w-full max-w-md bg-[#FFF0F5] pb-36 text-slate-800 font-sans antialiased overflow-hidden">
@@ -273,9 +270,9 @@ export default function ProfilePage() {
       {/* TOP HEADER */}
       <header className="px-6 pt-8 pb-4 relative z-10">
         <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-          Profilku <Heart className="w-5 h-5 fill-pink-500 text-pink-500" />
+          {COPY.account.title} <Heart className="w-5 h-5 fill-pink-500 text-pink-500" />
         </h1>
-        <p className="text-xs font-semibold text-pink-400">Kelola profil & kustomisasi akun cantik kamu</p>
+        <p className="text-xs font-semibold text-pink-400">{COPY.account.subtitle}</p>
       </header>
 
       <div className="px-6 space-y-6 relative z-10 mt-2">
@@ -293,14 +290,14 @@ export default function ProfilePage() {
               />
             ) : (
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-tr from-pink-500 to-rose-400 text-2xl font-black text-white shadow-md">
-                {user.displayName ? user.displayName.charAt(0).toUpperCase() : "🌸"}
+                {user.displayName ? user.displayName.charAt(0).toUpperCase() : "A"}
               </div>
             )}
             <button
               type="button"
               onClick={openEditProfile}
               className="absolute bottom-0 right-0 p-2 bg-pink-500 text-white rounded-full ring-2 ring-white hover:bg-pink-600 transition-colors shadow-xs"
-              title="Ubah Foto Profil"
+              title={COPY.account.changePhoto}
             >
               <Edit3 className="w-3.5 h-3.5" />
             </button>
@@ -308,13 +305,13 @@ export default function ProfilePage() {
 
           <div>
             <h2 className="text-lg font-extrabold text-slate-900 leading-tight">
-              {user.displayName || "Girlboss Alokasi"}
+              {user.displayName || COPY.dashboard.defaultName}
             </h2>
             <p className="text-xs font-semibold text-pink-400 mt-1 flex items-center justify-center gap-1">
               <Mail className="w-3.5 h-3.5 text-pink-400" /> {user.email}
             </p>
             <div className="inline-flex items-center gap-1.5 bg-pink-50 text-pink-500 border border-pink-100 px-3 py-1 rounded-full text-[10px] font-extrabold mt-3 shadow-2xs">
-              <Calendar className="w-3 h-3 text-pink-400" /> Member Sejak {createdAtFormatted}
+              <Calendar className="w-3 h-3 text-pink-400" /> {COPY.account.member} {createdAtFormatted}
             </div>
           </div>
         </div>
@@ -326,8 +323,8 @@ export default function ProfilePage() {
               <Wallet className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-[10px] text-pink-400 font-extrabold uppercase tracking-wider">Total Dompet</p>
-              <p className="text-sm font-black text-slate-800 mt-0.5">{walletCount} Aktif ✨</p>
+              <p className="text-[10px] text-pink-400 font-extrabold uppercase tracking-wider">{COPY.account.wallets}</p>
+              <p className="text-sm font-black text-slate-800 mt-0.5">{walletCount} {COPY.account.active}</p>
             </div>
           </div>
 
@@ -336,8 +333,8 @@ export default function ProfilePage() {
               <BarChart3 className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-[10px] text-pink-400 font-extrabold uppercase tracking-wider">Total Jajan</p>
-              <p className="text-sm font-black text-slate-800 mt-0.5">{txCount} Record 🛍️</p>
+              <p className="text-[10px] text-pink-400 font-extrabold uppercase tracking-wider">{COPY.account.transactions}</p>
+              <p className="text-sm font-black text-slate-800 mt-0.5">{txCount} {COPY.dashboard.transactionCount}</p>
             </div>
           </div>
         </div>
@@ -354,8 +351,8 @@ export default function ProfilePage() {
                 <User className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-extrabold text-slate-800">Ubah Profil</p>
-                <p className="text-[10px] font-semibold text-pink-400">Nama lengkap & foto avatar kamu</p>
+                <p className="text-xs font-extrabold text-slate-800">{COPY.account.edit}</p>
+                <p className="text-[10px] font-semibold text-pink-400">{COPY.account.editSubtitle}</p>
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-pink-300" />
@@ -371,8 +368,8 @@ export default function ProfilePage() {
                 <Bell className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-extrabold text-slate-800">Notifikasi & Pengingat 🔔</p>
-                <p className="text-[10px] font-semibold text-pink-400">Pengingat jajan harian & budget limit</p>
+                <p className="text-xs font-extrabold text-slate-800">{COPY.account.notifications}</p>
+                <p className="text-[10px] font-semibold text-pink-400">{COPY.account.notificationSubtitle}</p>
               </div>
             </div>
             <ChevronRight className={`w-4 h-4 text-pink-300 transition-transform ${isNotificationOpen ? "rotate-90" : ""}`} />
@@ -382,7 +379,7 @@ export default function ProfilePage() {
           {isNotificationOpen && (
             <div className="p-4 bg-pink-50/20 space-y-3 border-t border-pink-50">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-700 font-bold">Pengingat Catat Jajan Harian</span>
+                <span className="text-xs text-slate-700 font-bold">{COPY.account.dailyReminder}</span>
                 <input
                   type="checkbox"
                   checked={notifyDaily}
@@ -391,7 +388,7 @@ export default function ProfilePage() {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-700 font-bold">Peringatan Overbudget Limit</span>
+                <span className="text-xs text-slate-700 font-bold">{COPY.account.budgetReminder}</span>
                 <input
                   type="checkbox"
                   checked={notifyOverbudget}
@@ -412,8 +409,8 @@ export default function ProfilePage() {
                 <Lock className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-extrabold text-slate-800">Keamanan & Password 🔒</p>
-                <p className="text-[10px] font-semibold text-pink-400">Atur kata sandi akun kamu</p>
+                <p className="text-xs font-extrabold text-slate-800">{COPY.account.security}</p>
+                <p className="text-[10px] font-semibold text-pink-400">{COPY.account.securitySubtitle}</p>
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-pink-300" />
@@ -432,8 +429,8 @@ export default function ProfilePage() {
                 <RotateCcw className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-extrabold text-rose-600">Reset Data ke Nol</p>
-                <p className="text-[10px] font-semibold text-rose-400">Kosongkan semua riwayat jajan & dompet</p>
+                <p className="text-xs font-extrabold text-rose-600">{COPY.account.resetData}</p>
+                <p className="text-[10px] font-semibold text-rose-400">{COPY.account.resetSubtitle}</p>
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-rose-300" />
@@ -446,7 +443,7 @@ export default function ProfilePage() {
           onClick={handleLogout}
           className="w-full bg-rose-50 hover:bg-rose-100 border border-rose-200/80 text-rose-600 font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 text-xs transition-colors shadow-xs"
         >
-          <LogOut className="w-4 h-4" /> Keluar dari Akun
+          <LogOut className="w-4 h-4" /> {COPY.account.logout}
         </button>
       </div>
 
@@ -455,12 +452,12 @@ export default function ProfilePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
           <div className="relative max-h-[85vh] w-full max-w-md space-y-4 overflow-y-auto overscroll-contain rounded-[2rem] border border-pink-100 bg-white p-6 shadow-2xl">
             <div className="flex justify-between items-center">
-              <h3 className="text-base font-extrabold text-slate-900">Ubah Profil Cantik ✨</h3>
+              <h3 className="text-base font-extrabold text-slate-900">{COPY.account.editTitle}</h3>
               <button
                 type="button"
                 onClick={() => setIsEditProfileOpen(false)}
                 className="rounded-full p-1 text-slate-400 hover:bg-pink-50 hover:text-pink-500 transition-colors"
-                aria-label="Tutup"
+                aria-label={COPY.common.close}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -471,7 +468,7 @@ export default function ProfilePage() {
                 className={`p-3 rounded-xl text-xs text-center font-bold ${
                   profileMsg.type === "success"
                     ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                    : "bg-rose-50 text-rose-600 border border-rose-200"
+                      : "bg-rose-50 text-rose-600 border border-rose-200"
                 }`}
               >
                 {profileMsg.text}
@@ -484,7 +481,7 @@ export default function ProfilePage() {
                   {userAvatar ? (
                     <Image
                       src={userAvatar}
-                      alt="Preview Avatar"
+                      alt="Pratinjau foto profil"
                       width={80}
                       height={80}
                       unoptimized
@@ -492,7 +489,7 @@ export default function ProfilePage() {
                     />
                   ) : (
                     <div className="w-20 h-20 rounded-full bg-pink-100 flex items-center justify-center font-black text-pink-500 text-2xl">
-                      {newName ? newName.charAt(0).toUpperCase() : "🌸"}
+                      {newName ? newName.charAt(0).toUpperCase() : "A"}
                     </div>
                   )}
                   <button
@@ -509,18 +506,18 @@ export default function ProfilePage() {
                   onClick={() => avatarInputRef.current?.click()}
                   className="text-xs font-extrabold text-pink-500 hover:text-pink-600 mt-1"
                 >
-                  Pilih Gambar Avatar Baru ✨
+                  {COPY.account.choosePhoto}
                 </button>
               </div>
 
               <div>
-                <label className="block text-xs font-extrabold text-pink-500 mb-1">Nama Lengkap</label>
+                <label className="block text-xs font-extrabold text-pink-500 mb-1">{COPY.auth.name}</label>
                 <input
                   type="text"
                   required
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Nama Lengkap"
+                  placeholder={COPY.auth.namePlaceholder}
                   className="w-full rounded-2xl border border-pink-200 bg-pink-50/30 px-4 py-2.5 text-xs font-bold text-slate-800 focus:border-pink-500 focus:outline-none"
                 />
               </div>
@@ -532,11 +529,11 @@ export default function ProfilePage() {
               >
                 {isSavingProfile ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...
+                    <Loader2 className="w-4 h-4 animate-spin" /> {COPY.common.saving}
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 text-pink-100" /> Simpan Perubahan ✨
+                    <Sparkles className="w-4 h-4 text-pink-100" /> {COPY.account.saveChanges}
                   </>
                 )}
               </button>
@@ -550,12 +547,12 @@ export default function ProfilePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
           <div className="relative max-h-[85vh] w-full max-w-md space-y-4 overflow-y-auto overscroll-contain rounded-[2rem] border border-pink-100 bg-white p-6 shadow-2xl">
             <div className="flex justify-between items-center">
-              <h3 className="text-base font-extrabold text-slate-900">Ubah Kata Sandi 🔒</h3>
+              <h3 className="text-base font-extrabold text-slate-900">{COPY.account.securityTitle}</h3>
               <button
                 type="button"
                 onClick={() => setIsSecurityOpen(false)}
                 className="rounded-full p-1 text-slate-400 hover:bg-pink-50 hover:text-pink-500 transition-colors"
-                aria-label="Tutup"
+                aria-label={COPY.common.close}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -575,7 +572,7 @@ export default function ProfilePage() {
 
             <form onSubmit={handleSavePassword} className="space-y-3">
               <div>
-                <label className="block text-xs font-extrabold text-pink-500 mb-1">Password Baru</label>
+                <label className="block text-xs font-extrabold text-pink-500 mb-1">{COPY.auth.newPassword}</label>
                 <input
                   type="password"
                   required
@@ -587,7 +584,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-extrabold text-pink-500 mb-1">Konfirmasi Password Baru</label>
+                <label className="block text-xs font-extrabold text-pink-500 mb-1">{COPY.auth.confirmPassword}</label>
                 <input
                   type="password"
                   required
@@ -605,10 +602,10 @@ export default function ProfilePage() {
               >
                 {isSavingPassword ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Memproses...
+                    <Loader2 className="w-4 h-4 animate-spin" /> {COPY.common.processing}
                   </>
                 ) : (
-                  "Perbarui Password ✨"
+                  "Perbarui password"
                 )}
               </button>
             </form>
@@ -623,20 +620,20 @@ export default function ProfilePage() {
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2 text-rose-500">
                 <AlertTriangle className="w-5 h-5" />
-                <h3 className="text-base font-extrabold text-slate-900">Konfirmasi Reset Data</h3>
+                <h3 className="text-base font-extrabold text-slate-900">{COPY.account.resetTitle}</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsResetModalOpen(false)}
                 className="rounded-full p-1 text-slate-400 hover:bg-pink-50 hover:text-pink-500 transition-colors"
-                aria-label="Tutup"
+                aria-label={COPY.common.close}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <p className="text-xs font-medium text-slate-600 leading-relaxed">
-              Tindakan ini akan menghapus **semua riwayat jajan, daftar dompet, limit anggaran, dan wishlist** kamu secara permanen dari basis data.
+              {COPY.account.resetWarning}
             </p>
 
             {resetMsg.text && (
@@ -658,7 +655,7 @@ export default function ProfilePage() {
                 disabled={isResetting}
                 className="w-1/2 rounded-2xl border border-pink-100 bg-pink-50 py-3 text-xs font-extrabold text-pink-500 hover:bg-pink-100 transition-colors disabled:opacity-50"
               >
-                Batal
+                {COPY.common.cancel}
               </button>
               <button
                 type="button"
@@ -669,10 +666,10 @@ export default function ProfilePage() {
                 {isResetting ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Memproses...
+                    {COPY.common.processing}
                   </>
                 ) : (
-                  "Ya, Reset Semua"
+                  COPY.account.resetConfirm
                 )}
               </button>
             </div>

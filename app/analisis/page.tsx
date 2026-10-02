@@ -22,6 +22,7 @@ import {
 } from "@/lib/firestore-sync";
 import { getFinancialInsight } from "@/lib/gemini";
 import { getCategoryName } from "@/lib/category-options";
+import { COPY } from "@/lib/copy";
 
 export default function AnalisisPage() {
   const { user, loading } = useAuth();
@@ -30,7 +31,7 @@ export default function AnalisisPage() {
   // State Transaksi & Real-time Metrics
   const [transactions, setTransactions] = useState<DashboardTransaction[]>([]);
   const [aiInsight, setAiInsight] = useState<string>(
-    "Klik 'Minta Saran' biar AI kasih tips keuangan estetik buat kamu, Babe! ✨"
+    COPY.analysis.insightInitial
   );
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
@@ -60,7 +61,7 @@ export default function AnalisisPage() {
   const getNamaKategori = (kategoriId?: string, fallback?: string) =>
     getCategoryName(kategoriId) ||
     fallback ||
-    "Jajan Lainnya ✨";
+    COPY.categories.other;
 
   const totalPemasukan = transactions
     .filter((t) => t.tipe === "income")
@@ -99,7 +100,7 @@ export default function AnalisisPage() {
   // Request a financial insight.
   const handleFetchAiAdvice = async () => {
     if (transactions.length === 0) {
-      setAiInsight("Belum ada data jajan yang dicatat nih, yuk catat transaksi dulu! 🌸");
+      setAiInsight(COPY.analysis.insightEmpty);
       return;
     }
 
@@ -119,7 +120,7 @@ export default function AnalisisPage() {
     } catch (error) {
       console.error("Gagal mendapatkan saran AI:", error);
       setAiInsight(
-        "Saran belum tersedia. Silakan coba lagi sebentar ya, Cantik! 💕"
+        COPY.analysis.insightError
       );
     } finally {
       setIsGeneratingAi(false);
@@ -138,7 +139,7 @@ export default function AnalisisPage() {
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
           <p className="text-xs font-semibold text-pink-400">
-            Menganalisis Keuangan Cantik Kamu...
+            {COPY.common.loading}
           </p>
         </div>
       </div>
@@ -160,7 +161,7 @@ export default function AnalisisPage() {
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <h1 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-1.5">
-          <Heart className="w-4 h-4 fill-pink-500 text-pink-500" /> Analisis Keuangan
+          <Heart className="w-4 h-4 fill-pink-500 text-pink-500" /> {COPY.analysis.title}
         </h1>
         <div className="w-9" />
       </header>
@@ -174,7 +175,7 @@ export default function AnalisisPage() {
                 <Sparkles className="w-4 h-4" />
               </div>
               <span className="text-[11px] font-extrabold tracking-wider uppercase text-pink-400">
-                AI Financial Advisor ✨
+                {COPY.analysis.insight}
               </span>
             </div>
             <button
@@ -184,11 +185,11 @@ export default function AnalisisPage() {
             >
               {isGeneratingAi ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Menganalisis...
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> {COPY.analysis.analyzing}
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-3.5 h-3.5" /> Minta Saran 💖
+                  <Sparkles className="w-3.5 h-3.5" /> {COPY.analysis.requestInsight}
                 </>
               )}
             </button>
@@ -203,17 +204,17 @@ export default function AnalisisPage() {
         <section className="bg-white/80 backdrop-blur-2xl p-5 rounded-[2rem] shadow-xs border border-pink-100/80 space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">
-              Arus Kas Bulan Ini 📊
+              {COPY.analysis.cashFlow}
             </h2>
             <span className="text-[10px] text-pink-400 font-extrabold">
-              Real-time
+              {COPY.dashboard.live}
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3.5 bg-emerald-50/70 rounded-2xl border border-emerald-100/80 space-y-1">
               <div className="flex items-center gap-1.5 text-emerald-600 text-[10px] font-extrabold uppercase">
-                <TrendingUp className="w-3.5 h-3.5" /> Income 🌸
+                <TrendingUp className="w-3.5 h-3.5" /> {COPY.analysis.income}
               </div>
               <p className="text-sm font-black text-slate-900">
                 {formatRupiah(totalPemasukan)}
@@ -222,7 +223,7 @@ export default function AnalisisPage() {
 
             <div className="p-3.5 bg-rose-50/70 rounded-2xl border border-rose-100/80 space-y-1">
               <div className="flex items-center gap-1.5 text-rose-500 text-[10px] font-extrabold uppercase">
-                <TrendingDown className="w-3.5 h-3.5" /> Jajan Day 💸
+                <TrendingDown className="w-3.5 h-3.5" /> {COPY.analysis.expenses}
               </div>
               <p className="text-sm font-black text-slate-900">
                 {formatRupiah(totalPengeluaran)}
@@ -232,7 +233,7 @@ export default function AnalisisPage() {
 
           <div className="flex justify-between items-center pt-2 border-t border-pink-50 px-1">
             <span className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
-              <Wallet className="w-4 h-4 text-pink-500" /> Sisa Surplus Bersih
+              <Wallet className="w-4 h-4 text-pink-500" /> {COPY.analysis.netBalance}
             </span>
             <span
               className={`text-xs font-black ${
@@ -248,14 +249,14 @@ export default function AnalisisPage() {
         <section className="bg-white/80 backdrop-blur-2xl p-5 rounded-[2rem] shadow-xs border border-pink-100/80 space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">
-              Pengeluaran Per Kategori 🛍️
+              {COPY.analysis.byCategory}
             </h2>
             <PieChart className="w-4 h-4 text-pink-400" />
           </div>
 
           {kategoriList.length === 0 ? (
             <div className="p-6 text-center text-xs text-pink-400 font-semibold">
-              Belum ada pengeluaran tercatat bulan ini. ✨
+              {COPY.analysis.noExpenses}
             </div>
           ) : (
             <div className="space-y-3.5">

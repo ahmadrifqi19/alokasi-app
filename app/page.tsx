@@ -17,7 +17,6 @@ import {
   Sparkles,
   X,
   PiggyBank,
-  Heart,
   ShoppingBag,
 } from "lucide-react";
 import Image from "next/image";
@@ -62,6 +61,7 @@ import {
 
 // Import OCR Helper Gemini AI
 import { analyzeReceiptImage } from "@/lib/gemini";
+import { COPY, formatTanggalIndonesia } from "@/lib/copy";
 
 // Import Types
 import { Dompet, AnggaranKategori, UserStreak, TipeTransaksi } from "@/types";
@@ -127,8 +127,8 @@ export default function DashboardAlokasi() {
   });
 
   const [daftarAnggaran, setDaftarAnggaran] = useState<AnggaranKategori[]>([
-    { id: "b1", kategoriId: "k1", namaKategori: "Coffee & Treats ☕🍰", limitBulanan: 1500000, terpakai: 0 },
-    { id: "b2", kategoriId: "k2", namaKategori: "Shopping & Skincare 💄👗", limitBulanan: 500000, terpakai: 0 },
+    { id: "b1", kategoriId: "k1", namaKategori: COPY.categories.food, limitBulanan: 1500000, terpakai: 0 },
+    { id: "b2", kategoriId: "k2", namaKategori: COPY.categories.personal, limitBulanan: 500000, terpakai: 0 },
   ]);
 
   const kategoriManualMap = new Map<string, string>();
@@ -216,7 +216,7 @@ export default function DashboardAlokasi() {
   };
 
   const getNamaDompet = (id: string) => {
-    return daftarDompet.find((d) => d.id === id)?.nama || "Dompet";
+    return daftarDompet.find((d) => d.id === id)?.nama || COPY.wallet.title;
   };
 
   const getPengeluaranKategoriBulanIni = (
@@ -254,12 +254,12 @@ export default function DashboardAlokasi() {
 
     const nominalNum = Number(setorNominal);
     if (!nominalNum || nominalNum <= 0) {
-      setSetorError("Nominal setoran harus lebih dari Rp 0 ya, Babe! ✨");
+      setSetorError(COPY.dashboard.depositAmountError);
       return;
     }
 
     if (!selectedWalletId) {
-      setSetorError("Pilih dompet sumber dana dulu yuk!");
+      setSetorError(COPY.dashboard.chooseWallet);
       return;
     }
 
@@ -276,10 +276,8 @@ export default function DashboardAlokasi() {
       });
       setIsSetorOpen(false);
       setSelectedGoal(null);
-    } catch (error: unknown) {
-      setSetorError(
-        error instanceof Error ? error.message : "Gagal menyimpan tabungan kamu nih, coba lagi ya."
-      );
+    } catch {
+      setSetorError(COPY.dashboard.saveDepositError);
     } finally {
       setIsSubmittingSetor(false);
     }
@@ -301,14 +299,14 @@ export default function DashboardAlokasi() {
         const reader = new FileReader();
         reader.onload = () => {
           if (typeof reader.result === "string") resolve(reader.result);
-          else reject(new Error("Gagal membaca file gambar."));
+          else reject(new Error(COPY.dashboard.imageReadFailed));
         };
         reader.onerror = () =>
-          reject(reader.error ?? new Error("Gagal membaca file gambar."));
+          reject(reader.error ?? new Error(COPY.dashboard.imageReadFailed));
         reader.readAsDataURL(file);
       });
       const [, base64] = dataUrl.split(",", 2);
-      if (!base64) throw new Error("File gambar tidak valid.");
+      if (!base64) throw new Error(COPY.dashboard.invalidImage);
 
       const result = await analyzeReceiptImage(base64, file.type || "image/jpeg");
       const category = (result.kategori ?? "").toLocaleLowerCase("id-ID");
@@ -327,7 +325,7 @@ export default function DashboardAlokasi() {
       setIsModalTransaksiOpen(true);
     } catch (error) {
       console.error("Gagal membaca struk:", error);
-      alert(error instanceof Error ? error.message : String(error));
+      alert(COPY.receipt.failed);
     } finally {
       setIsScanningOCR(false);
     }
@@ -394,11 +392,6 @@ export default function DashboardAlokasi() {
       setDaftarAnggaran(updatedAnggaran);
     }
 
-    const jamMenit = new Date().toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
     const transaksiBaru: DashboardTransaction = {
       id: `t-${Date.now()}`,
       dompetId: data.dompetId,
@@ -408,7 +401,7 @@ export default function DashboardAlokasi() {
       tipe: data.tipe,
       catatan: data.catatan || "",
       tanggalObj: data.tanggal,
-      tanggalStr: `Hari Ini, ${jamMenit}`,
+      tanggalStr: formatTanggalIndonesia(data.tanggal),
     };
 
     await saveFirebaseTransaction(user.uid, transaksiBaru);
@@ -507,7 +500,7 @@ export default function DashboardAlokasi() {
       <div className="flex min-h-screen items-center justify-center bg-[#FFF0F5] text-pink-500">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-9 w-9 animate-spin text-pink-500" />
-          <p className="text-xs font-semibold text-pink-400">Memuat Alokasi Cantik...</p>
+            <p className="text-xs font-semibold text-pink-400">{COPY.common.loading}</p>
         </div>
       </div>
     );
@@ -545,15 +538,15 @@ export default function DashboardAlokasi() {
               />
             ) : (
               <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-400 flex items-center justify-center font-bold text-white text-base shadow-xs ring-2 ring-white">
-                {user.displayName ? user.displayName.charAt(0).toUpperCase() : "🌸"}
+                {user.displayName ? user.displayName.charAt(0).toUpperCase() : "A"}
               </div>
             )}
             <div>
               <p className="text-[11px] font-semibold text-pink-400 flex items-center gap-1">
-                Halo! <Heart className="w-3 h-3 fill-pink-400 text-pink-400" />
+                {COPY.dashboard.hello}
               </p>
               <h1 className="text-base font-extrabold text-slate-800 leading-tight">
-                {user.displayName || "Girlboss Alokasi"}
+                {user.displayName || COPY.dashboard.defaultName} 💖
               </h1>
             </div>
           </div>
@@ -561,7 +554,7 @@ export default function DashboardAlokasi() {
           <button
             onClick={handleLogout}
             className="p-2.5 bg-white/80 hover:bg-rose-50 border border-pink-100 rounded-full text-pink-400 hover:text-rose-500 transition-colors shadow-xs"
-            title="Keluar"
+            title={COPY.dashboard.logout}
           >
             <LogOut className="w-4 h-4" />
           </button>
@@ -573,10 +566,10 @@ export default function DashboardAlokasi() {
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-pink-100">
-                  Sisa Uang Jajan & Tabungan 💖
+                  {COPY.dashboard.totalBalance}
                 </span>
                 <span className="bg-white/20 px-2 py-0.5 rounded-full text-[9px] font-bold text-white backdrop-blur-md flex items-center gap-1">
-                  <Sparkles className="w-2.5 h-2.5 text-pink-200" /> Real-time
+                  <Sparkles className="w-2.5 h-2.5 text-pink-200" /> {COPY.dashboard.live}
                 </span>
               </div>
               <p className="mt-1.5 break-words text-3xl font-black tabular-nums tracking-tight text-white drop-shadow-xs">
@@ -588,7 +581,7 @@ export default function DashboardAlokasi() {
             </div>
           </div>
           <p className="text-[11px] text-pink-100/90 font-medium pt-1 border-t border-white/20">
-            Semua saldo dompet kamu sudah terkumpul rapi di sini, Babe! ✨
+            {COPY.dashboard.balanceDescription}
           </p>
         </div>
 
@@ -601,7 +594,7 @@ export default function DashboardAlokasi() {
             <div className="p-2.5 bg-pink-50 text-pink-500 border border-pink-100/80 rounded-xl mb-1.5">
               <Plus className="w-4 h-4 stroke-[2.5]" />
             </div>
-            <span className="text-[11px] font-extrabold text-slate-700">Catat Jajan</span>
+            <span className="text-[11px] font-extrabold text-slate-700">{COPY.dashboard.recordTransaction}</span>
           </button>
 
           <button
@@ -611,7 +604,7 @@ export default function DashboardAlokasi() {
             <div className="p-2.5 bg-rose-50 text-rose-500 border border-rose-100/80 rounded-xl mb-1.5">
               <ArrowDownToLine className="w-4 h-4 stroke-[2.5]" />
             </div>
-            <span className="text-[11px] font-extrabold text-slate-700">Dompetku</span>
+            <span className="text-[11px] font-extrabold text-slate-700">{COPY.dashboard.quickWallet}</span>
           </button>
 
           <button
@@ -621,7 +614,7 @@ export default function DashboardAlokasi() {
             <div className="p-2.5 bg-fuchsia-50 text-fuchsia-500 border border-fuchsia-100/80 rounded-xl mb-1.5">
               <ArrowUpFromLine className="w-4 h-4 stroke-[2.5]" />
             </div>
-            <span className="text-[11px] font-extrabold text-slate-700">Laporan</span>
+            <span className="text-[11px] font-extrabold text-slate-700">{COPY.dashboard.quickReport}</span>
           </button>
         </div>
       </header>
@@ -635,7 +628,7 @@ export default function DashboardAlokasi() {
               <TrendingDown className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-wider text-pink-400">Jajan Day 💸</p>
+              <p className="text-[10px] font-extrabold uppercase tracking-wider text-pink-400">{COPY.dashboard.expensesToday}</p>
               <p className="text-xs font-black text-slate-800 mt-0.5">{formatRupiah(pengeluaranHariIni)}</p>
             </div>
           </div>
@@ -645,7 +638,7 @@ export default function DashboardAlokasi() {
               <TrendingUp className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-500">Income In 🌸</p>
+              <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-500">{COPY.dashboard.incomeToday}</p>
               <p className="text-xs font-black text-slate-800 mt-0.5">{formatRupiah(totalPemasukanBulanIni)}</p>
             </div>
           </div>
@@ -655,27 +648,27 @@ export default function DashboardAlokasi() {
         <section className="bg-white/80 backdrop-blur-2xl p-5 rounded-[2rem] shadow-xs border border-pink-100/80 space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <Wallet className="w-4 h-4 text-pink-500" /> Dompet & E-Wallet
+              <Wallet className="w-4 h-4 text-pink-500" /> {COPY.dashboard.wallets}
             </h2>
             <button onClick={() => setIsModalDompetOpen(true)} className="text-xs font-extrabold text-pink-500 hover:text-pink-600">
-              Kelola
+              {COPY.dashboard.manage}
             </button>
           </div>
 
           <div className="space-y-3">
             {isLoadingWallets ? (
-              <p className="py-4 text-center text-xs text-pink-400 font-medium">Memuat dompet kamu...</p>
+              <p className="py-4 text-center text-xs text-pink-400 font-medium">{COPY.dashboard.loadingWallets}</p>
             ) : daftarDompet.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-pink-200 bg-pink-50/50 px-4 py-6 text-center">
                 <p className="text-xs font-semibold text-slate-700">
-                  Belum ada dompet nih. Tambah dompet pertama kamu yuk! 🛍️
+                  {COPY.dashboard.noWallets}
                 </p>
                 <button
                   type="button"
                   onClick={() => setIsModalDompetOpen(true)}
                   className="mt-3 rounded-xl bg-pink-500 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-pink-600"
                 >
-                  + Tambah Dompet
+                  + {COPY.dashboard.addWallet}
                 </button>
               </div>
             ) : daftarDompet.map((dompet, idx) => {
@@ -694,7 +687,7 @@ export default function DashboardAlokasi() {
                     </div>
                     <div>
                       <p className="text-xs font-bold text-slate-800">{dompet.nama}</p>
-                      <p className="text-[10px] text-pink-400 uppercase font-bold">{dompet.tipe}</p>
+                      <p className="text-[10px] text-pink-400 uppercase font-bold">{dompet.tipe === "ewallet" ? COPY.wallet.ewallet : dompet.tipe === "cash" ? COPY.wallet.cash : COPY.wallet.bank}</p>
                     </div>
                   </div>
                   <p className="text-xs font-black text-slate-800">{formatRupiah(dompet.saldo)}</p>
@@ -715,17 +708,17 @@ export default function DashboardAlokasi() {
         <section>
           <div className="flex justify-between items-center mb-3 px-1">
             <h2 className="text-xs font-black text-pink-400 uppercase tracking-widest flex items-center gap-1.5">
-              <ShoppingBag className="w-3.5 h-3.5" /> Wishlist & Savings Goals ✨
+              <ShoppingBag className="w-3.5 h-3.5" /> {COPY.dashboard.savingsGoal}
             </h2>
             <button onClick={() => setIsModalTargetOpen(true)} className="text-xs font-extrabold text-pink-500 hover:text-pink-600">
-              + Baru
+              + {COPY.dashboard.add}
             </button>
           </div>
 
           <div className="space-y-3">
             {daftarTarget.length === 0 ? (
               <div className="p-5 text-center text-xs text-pink-400 font-medium bg-white/80 rounded-2xl border border-pink-100/80">
-                Belum ada wishlist tercatat. Klik + Baru buat nambah impian kamu! 🛍️✨
+                {COPY.dashboard.noGoals}
               </div>
             ) : (
               daftarTarget.map((target) => (
@@ -737,7 +730,7 @@ export default function DashboardAlokasi() {
                   <CardTargetTabungan
                     target={{
                       ...target,
-                      nama: target.namaGoal ?? (target as unknown as { nama?: string }).nama ?? "Wishlist Cantik"
+                      nama: target.namaGoal ?? (target as unknown as { nama?: string }).nama ?? COPY.goal.title
                     }}
                   />
                 </div>
@@ -749,18 +742,18 @@ export default function DashboardAlokasi() {
         {/* RIWAYAT TRANSAKSI */}
         <section>
           <div className="flex justify-between items-center mb-3 px-1">
-            <h2 className="text-xs font-black text-pink-400 uppercase tracking-widest">Riwayat Transaksi 📝</h2>
+            <h2 className="text-xs font-black text-pink-400 uppercase tracking-widest">{COPY.dashboard.transactionHistory}</h2>
             <span className="text-[10px] font-bold text-pink-400">
-              {transaksiTerfilter.length} transaksi
+              {transaksiTerfilter.length} {COPY.dashboard.transactionCount}
             </span>
           </div>
 
           <div className="mb-3 grid grid-cols-4 gap-1 rounded-2xl border border-pink-100 bg-white/80 p-1">
             {([
-              ["all", "Semua"],
-              ["7days", "7 hari"],
-              ["30days", "30 hari"],
-              ["custom", "Tanggal"],
+              ["all", COPY.dashboard.all],
+              ["7days", COPY.dashboard.sevenDays],
+              ["30days", COPY.dashboard.thirtyDays],
+              ["custom", COPY.dashboard.date],
             ] as const).map(([value, label]) => (
               <button
                 key={value}
@@ -781,22 +774,22 @@ export default function DashboardAlokasi() {
           {filterRiwayat === "custom" && (
             <div className="mb-3 grid grid-cols-2 gap-3 rounded-2xl border border-pink-100 bg-white/80 p-3">
               <label className="text-[10px] font-bold text-pink-500">
-                Dari tanggal
+                {COPY.dashboard.fromDate}
                 <input
                   type="date"
                   value={tanggalMulaiRiwayat}
                   onChange={(e) => setTanggalMulaiRiwayat(e.target.value)}
-                  aria-label="Tanggal mulai riwayat"
+                  aria-label={COPY.dashboard.startDateAria}
                   className="mt-1 w-full min-w-0 rounded-xl border border-pink-200 bg-pink-50/30 px-2 py-2 text-xs text-slate-700 focus:border-pink-500 focus:outline-none"
                 />
               </label>
               <label className="text-[10px] font-bold text-pink-500">
-                Sampai tanggal
+                {COPY.dashboard.throughDate}
                 <input
                   type="date"
                   value={tanggalAkhirRiwayat}
                   onChange={(e) => setTanggalAkhirRiwayat(e.target.value)}
-                  aria-label="Tanggal akhir riwayat"
+                  aria-label={COPY.dashboard.endDateAria}
                   className="mt-1 w-full min-w-0 rounded-xl border border-pink-200 bg-pink-50/30 px-2 py-2 text-xs text-slate-700 focus:border-pink-500 focus:outline-none"
                 />
               </label>
@@ -806,11 +799,11 @@ export default function DashboardAlokasi() {
           <div className="bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-xs border border-pink-100/80 divide-y divide-pink-50 overflow-hidden">
             {daftarTransaksi.length === 0 ? (
               <div className="p-6 text-center text-xs text-pink-400 font-semibold">
-                Masih bersih nih, belum ada jajan hari ini~ ✨
+                {COPY.dashboard.noTransactionsToday}
               </div>
             ) : transaksiTerfilter.length === 0 ? (
               <div className="p-6 text-center text-xs text-pink-400 font-semibold">
-                Tidak ada transaksi pada periode tanggal ini.
+                {COPY.dashboard.noTransactionsInRange}
               </div>
             ) : (
               transaksiTerfilter.map((item) => (
@@ -831,7 +824,7 @@ export default function DashboardAlokasi() {
                     </div>
                     <div>
                       <p className="text-xs font-bold text-slate-800">
-                        {item.catatan || (item.tipe === "transfer" ? "Pindah Saldo" : "Transaksi")}
+                        {item.catatan || (item.tipe === "transfer" ? COPY.dashboard.transfer : COPY.dashboard.transaction)}
                       </p>
                       <p className="text-[10px] text-pink-400 font-semibold mt-0.5">
                         {getNamaDompet(item.dompetId)} • {item.tanggalStr}
@@ -876,7 +869,7 @@ export default function DashboardAlokasi() {
                   <PiggyBank className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Nabung buat Wishlist ✨</h3>
+                  <h3 className="text-base font-bold text-slate-900">{COPY.goal.deposit}</h3>
                   <p className="text-xs text-pink-400 font-bold">{selectedGoal.namaGoal}</p>
                 </div>
               </div>
@@ -884,7 +877,7 @@ export default function DashboardAlokasi() {
                 type="button"
                 onClick={() => setIsSetorOpen(false)}
                 className="rounded-full p-1 text-slate-400 hover:bg-pink-50 hover:text-pink-500 transition-colors"
-                aria-label="Tutup"
+                aria-label={COPY.common.close}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -899,7 +892,7 @@ export default function DashboardAlokasi() {
             <form onSubmit={handleProcessSetorTabungan} className="space-y-4">
               <div>
                 <label className="block text-xs font-extrabold text-pink-500 mb-1">
-                  Nominal Setoran (Rp)
+                  {COPY.dashboard.depositAmount}
                 </label>
                 <input
                   type="number"
@@ -907,14 +900,14 @@ export default function DashboardAlokasi() {
                   min="1"
                   value={setorNominal}
                   onChange={(e) => setSetorNominal(e.target.value)}
-                  placeholder="Contoh: 500000"
+                  placeholder="Contoh: 500.000"
                   className="w-full rounded-xl border border-pink-200 bg-pink-50/30 px-4 py-2.5 text-xs font-bold text-slate-800 focus:border-pink-500 focus:outline-none"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-extrabold text-pink-500 mb-1">
-                  Ambil Saldo Dari Dompet
+                  {COPY.dashboard.walletSource}
                 </label>
                 <select
                   value={selectedWalletId}
@@ -937,10 +930,10 @@ export default function DashboardAlokasi() {
                 {isSubmittingSetor ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Memproses Tabungan...
+                    {COPY.dashboard.processingDeposit}
                   </>
                 ) : (
-                  "Konfirmasi Nabung 💖"
+                  COPY.dashboard.confirmDeposit
                 )}
               </button>
             </form>

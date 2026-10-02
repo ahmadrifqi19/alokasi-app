@@ -6,6 +6,7 @@ import Papa from "papaparse";
 import jsPDF from "jspdf";
 import { Transaksi, Dompet } from "@/types";
 import { CategoryOption, getCategoryName } from "@/lib/category-options";
+import { COPY, formatTanggalIndonesia } from "@/lib/copy";
 
 interface Props {
   isOpen: boolean;
@@ -30,15 +31,23 @@ export default function ModalExportLaporan({
     return daftarDompet.find((d) => d.id === id)?.nama || "Dompet";
   };
 
+  const formatRupiah = (angka: number) =>
+    `Rp ${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(angka)}`;
+  const getTipeTransaksi = (tipe: Transaksi["tipe"]) => {
+    if (tipe === "expense") return COPY.transaction.expense;
+    if (tipe === "income") return COPY.transaction.income;
+    return COPY.transaction.transfer;
+  };
+
   // 1. Export Ke CSV / Excel
   const handleExportCSV = () => {
     const dataCSV = daftarTransaksi.map((t) => ({
-      Tanggal: t.tanggalStr,
-      Tipe: t.tipe.toUpperCase(),
-      Kategori: getCategoryName(t.kategoriId, kategoriManual) || "-",
-      Dompet: getNamaDompet(t.dompetId),
-      Nominal: t.nominal,
-      Catatan: t.catatan || "-",
+      [COPY.export.date]: t.tanggalStr,
+      [COPY.export.transactionType]: getTipeTransaksi(t.tipe),
+      [COPY.export.category]: getCategoryName(t.kategoriId, kategoriManual) || "-",
+      [COPY.export.wallet]: getNamaDompet(t.dompetId),
+      [COPY.export.amount]: formatRupiah(t.nominal),
+      [COPY.export.note]: t.catatan || "-",
     }));
 
     const csv = Papa.unparse(dataCSV);
@@ -46,7 +55,7 @@ export default function ModalExportLaporan({
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `Laporan_Jajan_Alokasi_${Date.now()}.csv`);
+    link.setAttribute("download", `Laporan_Keuangan_Alokasi_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -58,20 +67,20 @@ export default function ModalExportLaporan({
     const doc = new jsPDF();
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
-    doc.text("Laporan Keuangan Cantik - Alokasi", 14, 20);
+    doc.text(COPY.export.pdfTitle, 14, 20);
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Dicetak pada: ${new Date().toLocaleDateString("id-ID")}`, 14, 28);
+    doc.text(`${COPY.export.printedAt} ${formatTanggalIndonesia(new Date())}`, 14, 28);
 
     let yPos = 40;
     const drawTableHeader = () => {
       doc.setFont("helvetica", "bold");
-      doc.text("Tanggal", 14, yPos);
-      doc.text("Tipe", 50, yPos);
-      doc.text("Dompet", 80, yPos);
-      doc.text("Nominal (Rp)", 130, yPos);
-      doc.text("Kategori / Catatan", 160, yPos);
+      doc.text(COPY.export.date, 14, yPos);
+      doc.text(COPY.export.transactionType, 50, yPos);
+      doc.text(COPY.export.wallet, 80, yPos);
+      doc.text(COPY.export.amount, 130, yPos);
+      doc.text(COPY.export.categoryNote, 160, yPos);
       yPos += 6;
       doc.setLineWidth(0.5);
       doc.line(14, yPos, 196, yPos);
@@ -91,14 +100,14 @@ export default function ModalExportLaporan({
       }
 
       doc.text(t.tanggalStr, 14, yPos);
-      doc.text(t.tipe.toUpperCase(), 50, yPos);
+      doc.text(getTipeTransaksi(t.tipe), 50, yPos);
       doc.text(getNamaDompet(t.dompetId), 80, yPos);
-      doc.text(t.nominal.toLocaleString("id-ID"), 130, yPos);
+      doc.text(formatRupiah(t.nominal), 130, yPos);
       doc.text(detailLines, 160, yPos);
       yPos += rowHeight;
     });
 
-    doc.save(`Laporan_Jajan_Alokasi_${Date.now()}.pdf`);
+    doc.save(`Laporan_Keuangan_Alokasi_${Date.now()}.pdf`);
     onClose();
   };
 
@@ -121,16 +130,16 @@ export default function ModalExportLaporan({
             </div>
             <div>
               <h2 className="text-base font-extrabold text-slate-800">
-                Ekspor Laporan Keuangan 💖
+                {COPY.export.title}
               </h2>
-              <p className="text-[11px] text-pink-400 font-bold">Unduh rekap jajan & tabungan kamu</p>
+              <p className="text-[11px] text-pink-400 font-bold">{COPY.export.subtitle}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="p-1.5 bg-pink-50 hover:bg-pink-100 text-pink-400 rounded-full transition-colors"
-            aria-label="Tutup"
+            aria-label={COPY.common.close}
           >
             <X className="w-5 h-5" />
           </button>
@@ -153,8 +162,8 @@ export default function ModalExportLaporan({
               }`}
             />
             <div>
-              <p className="text-xs font-extrabold text-slate-800">Format CSV / Excel</p>
-              <p className="text-[10px] text-pink-400 font-medium">Rapi untuk diolah di Excel ✨</p>
+              <p className="text-xs font-extrabold text-slate-800">{COPY.export.csv}</p>
+              <p className="text-[10px] text-pink-400 font-medium">{COPY.export.csvDescription}</p>
             </div>
           </button>
 
@@ -173,8 +182,8 @@ export default function ModalExportLaporan({
               }`}
             />
             <div>
-              <p className="text-xs font-extrabold text-slate-800">Format PDF</p>
-              <p className="text-[10px] text-pink-400 font-medium">Dokumen siap cetak & baca 📄</p>
+              <p className="text-xs font-extrabold text-slate-800">{COPY.export.pdf}</p>
+              <p className="text-[10px] text-pink-400 font-medium">{COPY.export.pdfDescription}</p>
             </div>
           </button>
         </div>
@@ -186,7 +195,7 @@ export default function ModalExportLaporan({
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 via-rose-400 to-fuchsia-400 py-3.5 text-xs font-extrabold text-white transition-opacity hover:opacity-95 active:scale-[0.98] shadow-lg shadow-pink-500/25"
         >
           <Sparkles className="w-4 h-4 text-pink-100" />
-          Unduh Laporan ({format.toUpperCase()}) ✨
+          {COPY.export.download.replace("{format}", format.toUpperCase())}
         </button>
       </div>
     </div>

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { X, Plus, Trash2, Banknote, Building2, CreditCard, Check, Heart, Sparkles } from "lucide-react";
 import { Dompet, TipeDompet } from "@/types";
+import { COPY } from "@/lib/copy";
 
 interface Props {
   isOpen: boolean;
@@ -45,11 +46,9 @@ export default function ModalKelolaDompet({
   };
 
   const formatRupiah = (angka: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
+    return `Rp ${new Intl.NumberFormat("id-ID", {
       maximumFractionDigits: 0,
-    }).format(angka);
+    }).format(angka)}`;
   };
 
   const getIconDompet = (tipeDompet: TipeDompet) => {
@@ -74,15 +73,15 @@ export default function ModalKelolaDompet({
               <Heart className="w-5 h-5 fill-pink-500 text-pink-500" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-slate-800">Dompet & Rekening Cantik ✨</h2>
-              <p className="text-[11px] text-pink-400 font-bold">Atur tempat penyimpanan uang kamu</p>
+              <h2 className="text-base font-extrabold text-slate-800">{COPY.wallet.title}</h2>
+              <p className="text-[11px] text-pink-400 font-bold">{COPY.wallet.subtitle}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="p-1.5 bg-pink-50 hover:bg-pink-100 text-pink-400 rounded-full transition-colors"
-            aria-label="Tutup"
+            aria-label={COPY.common.close}
           >
             <X className="w-5 h-5" />
           </button>
@@ -93,16 +92,16 @@ export default function ModalKelolaDompet({
           <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto pr-1">
             <div className="p-4 bg-pink-50/40 rounded-2xl border border-pink-100 space-y-3">
               <h3 className="text-xs font-extrabold text-pink-500 uppercase tracking-wider flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5" /> Tambah Dompet Cantik
+                <Sparkles className="w-3.5 h-3.5" /> {COPY.wallet.addNew}
               </h3>
 
               <div>
                 <label className="text-[10px] font-extrabold uppercase tracking-wider text-pink-500">
-                  Nama Dompet / Rekening
+                  {COPY.wallet.name}
                 </label>
                 <input
                   type="text"
-                  placeholder="Contoh: SeaBank, Dana Cantik, Cash Jajan"
+                  placeholder={COPY.wallet.namePlaceholder}
                   value={nama}
                   onChange={(e) => setNama(e.target.value)}
                   required
@@ -113,22 +112,22 @@ export default function ModalKelolaDompet({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] font-extrabold uppercase tracking-wider text-pink-500">
-                    Tipe
+                    {COPY.wallet.type}
                   </label>
                   <select
                     value={tipe}
                     onChange={(e) => setTipe(e.target.value as TipeDompet)}
                     className="w-full mt-1 p-2.5 bg-white border border-pink-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-pink-500"
                   >
-                    <option value="bank">Bank 🏛️</option>
-                    <option value="ewallet">E-Wallet 📱</option>
-                    <option value="cash">Tunai / Cash 💵</option>
+                    <option value="bank">{COPY.wallet.bank}</option>
+                    <option value="ewallet">{COPY.wallet.ewallet}</option>
+                    <option value="cash">{COPY.wallet.cash}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="text-[10px] font-extrabold uppercase tracking-wider text-pink-500">
-                    Saldo Awal (Rp)
+                    {COPY.wallet.openingBalance}
                   </label>
                   <input
                     type="number"
@@ -144,7 +143,7 @@ export default function ModalKelolaDompet({
               {/* Pilihan Warna Label */}
               <div>
                 <label className="text-[10px] font-extrabold uppercase tracking-wider text-pink-500">
-                  Warna Label Cantik
+                  {COPY.wallet.labelColor}
                 </label>
                 <div className="flex gap-2 mt-1">
                   {[
@@ -176,13 +175,13 @@ export default function ModalKelolaDompet({
                 onClick={() => setModeTambah(false)}
                 className="w-1/2 py-2.5 bg-pink-50 hover:bg-pink-100 text-pink-500 font-extrabold text-xs rounded-xl transition-colors"
               >
-                Batal
+                {COPY.common.cancel}
               </button>
               <button
                 type="submit"
                 className="w-1/2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-400 py-2.5 text-xs font-extrabold text-white shadow-md shadow-pink-500/20 transition-opacity hover:opacity-95"
               >
-                Simpan ✨
+                {COPY.common.save}
               </button>
             </div>
           </form>
@@ -208,7 +207,8 @@ export default function ModalKelolaDompet({
                       type="button"
                       onClick={() => d.id && onHapusDompet(d.id)}
                       className="p-1.5 text-pink-200 hover:text-rose-500 transition-colors"
-                      title="Hapus Dompet"
+                      title={COPY.wallet.delete}
+                      aria-label={COPY.wallet.delete}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -223,7 +223,7 @@ export default function ModalKelolaDompet({
               className="w-full py-3 bg-pink-50 border border-dashed border-pink-200 hover:bg-pink-100/60 text-pink-500 font-extrabold text-xs rounded-2xl flex items-center justify-center gap-1.5 transition-colors"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
-              Tambah Dompet / Rekening Baru ✨
+              {COPY.wallet.addNew}
             </button>
           </div>
         )}

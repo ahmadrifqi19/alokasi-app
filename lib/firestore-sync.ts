@@ -22,6 +22,7 @@ import {
   DEFAULT_CATEGORY_OPTIONS,
 } from "@/lib/category-options";
 import { getBadgeLevel, getLocalDateKey } from "@/lib/gamification";
+import { formatTanggalIndonesia } from "@/lib/copy";
 export type { DashboardTransaction } from "@/types";
 
 export interface TargetTabungan {
@@ -111,10 +112,7 @@ function toTransaction(
           ? value.note
           : legacyCategory,
     tanggalObj,
-    tanggalStr:
-      typeof value.tanggalStr === "string"
-        ? value.tanggalStr
-        : tanggalObj.toLocaleDateString("id-ID"),
+    tanggalStr: formatTanggalIndonesia(tanggalObj),
   };
 }
 

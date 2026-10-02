@@ -8,6 +8,7 @@ import {
   DEFAULT_CATEGORY_OPTIONS,
   OTHER_CATEGORY_OPTION_ID,
 } from "@/lib/category-options";
+import { COPY } from "@/lib/copy";
 
 interface ModalAturLimitProps {
   isOpen: boolean;
@@ -85,16 +86,16 @@ export default function ModalAturLimit({
             </div>
             <div>
               <h3 className="text-base font-extrabold text-slate-900">
-                Atur Limit Jajan Bulanan 💖
+                {COPY.budget.add}
               </h3>
-              <p className="text-[11px] text-pink-400 font-bold">Jaga keuangan kamu tetap terkontrol, Babe!</p>
+              <p className="text-[11px] text-pink-400 font-bold">{COPY.budget.subtitle}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="p-1.5 bg-pink-50 hover:bg-pink-100 text-pink-400 rounded-full transition-colors"
-            aria-label="Tutup"
+            aria-label={COPY.common.close}
           >
             <X className="w-5 h-5" />
           </button>
@@ -104,7 +105,7 @@ export default function ModalAturLimit({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-extrabold text-pink-500 mb-1">
-              Kategori Jajan
+              {COPY.budget.category}
             </label>
             <div className="flex gap-2">
               <select
@@ -117,13 +118,13 @@ export default function ModalAturLimit({
                     {k.nama}
                   </option>
                 ))}
-                <option value={OTHER_CATEGORY_OPTION_ID}>Lainnya...</option>
+                <option value={OTHER_CATEGORY_OPTION_ID}>{COPY.transaction.otherCategory}</option>
               </select>
               {kategoriOptions.some((kategori) => kategori.id === activeSelectedKategoriId) && (
                 <button
                   type="button"
-                  title="Hapus kategori"
-                  aria-label="Hapus kategori"
+                  title={COPY.transaction.deleteCategory}
+                  aria-label={COPY.transaction.deleteCategory}
                   onClick={() => {
                     const selectedKategori = kategoriOptions.find(
                       (kategori) => kategori.id === activeSelectedKategoriId,
@@ -131,7 +132,7 @@ export default function ModalAturLimit({
                     if (
                       selectedKategori &&
                       window.confirm(
-                        `Hapus kategori "${selectedKategori.nama}" dari pilihan? Riwayat lama tetap tersimpan.`,
+                        COPY.transaction.deleteCategoryConfirm.replace("{name}", selectedKategori.nama),
                       )
                     ) {
                       onDeleteCategory(activeSelectedKategoriId);
@@ -153,7 +154,7 @@ export default function ModalAturLimit({
                 type="text"
                 required
                 maxLength={50}
-                placeholder="Tulis nama kategori baru"
+                placeholder={COPY.transaction.newCategory}
                 value={customKategori}
                 onChange={(e) => setCustomKategori(e.target.value)}
                 className="mt-2 w-full rounded-2xl border border-pink-200 bg-pink-50/30 px-4 py-2.5 text-xs font-bold text-slate-800 focus:border-pink-500 focus:outline-none"
@@ -163,12 +164,12 @@ export default function ModalAturLimit({
 
           <div>
             <label className="block text-xs font-extrabold text-pink-500 mb-1">
-              Limit Maksimal Bulanan (Rp)
+              {COPY.budget.monthlyLimit}
             </label>
             <input
               type="number"
               required
-              placeholder="Contoh: 1500000"
+              placeholder="Contoh: 1.500.000"
               value={limitInput}
               onChange={(e) => setLimitInput(e.target.value)}
               className="w-full rounded-2xl border border-pink-200 bg-pink-50/30 px-4 py-2.5 text-xs font-bold text-slate-800 focus:border-pink-500 focus:outline-none"
@@ -179,7 +180,7 @@ export default function ModalAturLimit({
             type="submit"
             className="w-full rounded-2xl bg-gradient-to-r from-pink-500 via-rose-400 to-fuchsia-400 py-3.5 text-xs font-extrabold text-white hover:opacity-95 transition-opacity mt-2 flex items-center justify-center gap-2 shadow-lg shadow-pink-500/25"
           >
-            <Sparkles className="w-4 h-4 text-pink-100" /> Simpan Limit Anggaran ✨
+            <Sparkles className="w-4 h-4 text-pink-100" /> {COPY.common.save}
           </button>
         </form>
       </div>

@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { COPY } from "@/lib/copy";
 
 interface ScanRequest {
   base64?: unknown;
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return Response.json(
-      { error: "GEMINI_API_KEY belum di-set di server" },
+      { error: COPY.errors.scan },
       { status: 500 },
     );
   }
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as ScanRequest;
     if (typeof body.base64 !== "string" || !body.base64.trim()) {
       return Response.json(
-        { error: "Base64 gambar struk wajib diisi" },
+        { error: COPY.errors.scan },
         { status: 400 },
       );
     }
@@ -82,7 +83,7 @@ export async function POST(request: Request) {
       !("total" in result) ||
       typeof result.total !== "number"
     ) {
-      throw new Error("Respons Gemini tidak berisi total yang valid");
+      throw new Error(COPY.errors.scan);
     }
 
     return Response.json({
@@ -97,7 +98,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("API scan-struk error:", error);
     return Response.json(
-      { error: error instanceof Error ? error.message : String(error) },
+      { error: COPY.errors.scan },
       { status: 500 },
     );
   }

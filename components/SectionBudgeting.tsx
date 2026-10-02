@@ -4,6 +4,7 @@ import React from "react";
 import { Award, Flame, Sparkles, Heart } from "lucide-react";
 import { AnggaranKategori, UserStreak } from "@/types";
 import { getBadgeProgress } from "@/lib/gamification";
+import { COPY } from "@/lib/copy";
 
 interface SectionBudgetingProps {
   streak: UserStreak;
@@ -35,20 +36,20 @@ export default function SectionBudgeting({
             <p className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800">
               <Flame className="h-3.5 w-3.5 text-rose-500" aria-hidden="true" />
               {streak.currentStreak > 0
-                ? `${streak.currentStreak} Hari Rajin Catat Jajan!`
-                : "Mulai streak catat jajan hari ini!"}
+                ? COPY.gamification.streak.replace("{count}", String(streak.currentStreak))
+                : COPY.gamification.firstTransaction}
             </p>
             <p className="mt-0.5 text-[10px] font-semibold text-pink-500">
-              Badge {streak.badgeLevel}
+              {COPY.gamification.badge.replace("{level}", streak.badgeLevel)}
               {badgeProgress.nextLevel
-                ? ` · ${badgeProgress.pointsRemaining} poin menuju ${badgeProgress.nextLevel}`
-                : " · Level tertinggi tercapai"}
+                ? ` · ${COPY.gamification.pointsToNext.replace("{count}", String(badgeProgress.pointsRemaining)).replace("{level}", badgeProgress.nextLevel)}`
+                : ` · ${COPY.gamification.highestLevel}`}
             </p>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
           <span className="rounded-full border border-pink-200/80 bg-white/90 px-3 py-1 text-xs font-extrabold text-pink-500 shadow-2xs flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-pink-400" /> {streak.poin} Poin
+            <Sparkles className="w-3 h-3 text-pink-400" /> {streak.poin} {COPY.gamification.points}
           </span>
           {badgeProgress.nextLevel && (
             <span className="text-[9px] font-bold text-pink-400">
@@ -62,21 +63,21 @@ export default function SectionBudgeting({
       <section>
         <div className="flex justify-between items-center mb-3 px-1">
           <h2 className="text-xs font-black text-pink-400 uppercase tracking-widest flex items-center gap-1.5">
-            <Heart className="w-3.5 h-3.5 fill-pink-400 text-pink-400" /> Limit Jajan Bulanan
+            <Heart className="w-3.5 h-3.5 fill-pink-400 text-pink-400" /> {COPY.budget.title}
           </h2>
           <button
             type="button"
             onClick={onOpenModalLimit}
             className="text-xs font-extrabold text-pink-500 hover:text-pink-600 transition-colors"
           >
-            + Atur Limit
+            {COPY.budget.add}
           </button>
         </div>
 
         <div className="divide-y divide-pink-50 overflow-hidden rounded-[2rem] border border-pink-100/80 bg-white/80 backdrop-blur-2xl shadow-xs">
           {daftarAnggaran.length === 0 ? (
             <div className="p-5 text-center text-xs text-pink-400 font-medium">
-              Belum ada limit anggaran. Klik + Atur Limit untuk membuat batasan jajan! ✨
+              {COPY.budget.noBudget}
             </div>
           ) : (
             daftarAnggaran.map((ang) => {
@@ -94,7 +95,7 @@ export default function SectionBudgeting({
                         {ang.namaKategori}
                       </p>
                       <p className="text-[10px] font-bold text-pink-400">
-                        Limit: {formatRupiah(ang.limitBulanan)} / bulan
+                        {COPY.budget.limit}: {formatRupiah(ang.limitBulanan)} / bulan
                       </p>
                     </div>
                     <span
@@ -104,7 +105,7 @@ export default function SectionBudgeting({
                           : "bg-emerald-50 text-emerald-600 border-emerald-100"
                       }`}
                     >
-                      {sisa < 0 ? "Overbudget 🚨" : "Aman ✨"}
+                      {sisa < 0 ? COPY.budget.overLimit : COPY.budget.withinLimit}
                     </span>
                   </div>
 
@@ -121,8 +122,8 @@ export default function SectionBudgeting({
                   </div>
 
                   <div className="flex justify-between text-[10px] font-bold text-pink-400/90">
-                    <span>Terpakai: {formatRupiah(ang.terpakai)}</span>
-                    <span>Sisa: {formatRupiah(sisa)}</span>
+                    <span>{COPY.budget.spent}: {formatRupiah(ang.terpakai)}</span>
+                    <span>{COPY.budget.remaining}: {formatRupiah(sisa)}</span>
                   </div>
                 </div>
               );

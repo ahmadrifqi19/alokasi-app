@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Home, Camera, Plus, BarChart3, User, Loader2 } from "lucide-react";
+import { COPY } from "@/lib/copy";
 
 interface BottomNavigationProps {
   activePage: "home" | "analysis" | "account";
@@ -28,7 +29,7 @@ export default function BottomNavigation({
           }`}
         >
           <Home className="w-5 h-5 stroke-[2.2]" />
-          <span className="text-[10px] font-extrabold">Beranda</span>
+          <span className="text-[10px] font-extrabold">{COPY.common.home}</span>
         </Link>
 
         {/* SCAN STRUK OCR */}
@@ -43,7 +44,7 @@ export default function BottomNavigation({
           ) : (
             <Camera className="w-5 h-5 stroke-[2.2]" />
           )}
-          <span className="text-[10px] font-extrabold">Scan Struk</span>
+          <span className="text-[10px] font-extrabold">{isScanning ? COPY.receipt.reading : COPY.receipt.title}</span>
         </button>
 
         {/* TOMBOL UTAMA CATAT JAJAN */}
@@ -51,7 +52,7 @@ export default function BottomNavigation({
           type="button"
           onClick={onAddTransaction}
           className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-500 via-rose-400 to-fuchsia-400 text-white shadow-lg shadow-pink-500/30 hover:scale-110 active:scale-95 transition-all -mt-5 ring-4 ring-white"
-          aria-label="Tambah Transaksi"
+          aria-label={COPY.dashboard.recordTransaction}
         >
           <Plus className="w-6 h-6 stroke-[3]" />
         </button>
@@ -64,7 +65,7 @@ export default function BottomNavigation({
           }`}
         >
           <BarChart3 className="w-5 h-5 stroke-[2.2]" />
-          <span className="text-[10px] font-extrabold">Analisis</span>
+          <span className="text-[10px] font-extrabold">{COPY.common.analysis}</span>
         </Link>
 
         {/* AKUN / PROFIL */}
@@ -75,7 +76,7 @@ export default function BottomNavigation({
           }`}
         >
           <User className="w-5 h-5 stroke-[2.2]" />
-          <span className="text-[10px] font-extrabold">Profilku</span>
+          <span className="text-[10px] font-extrabold">{COPY.common.profile}</span>
         </Link>
       </nav>
     </div>

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { X, Heart, Sparkles } from "lucide-react";
 import { TargetTabungan } from "@/types";
+import { COPY } from "@/lib/copy";
 
 interface Props {
   isOpen: boolean;
@@ -51,16 +52,16 @@ export default function ModalTambahTarget({
             </div>
             <div>
               <h2 className="text-base font-extrabold text-slate-800">
-                Tambah Wishlist Impian ✨
+                {COPY.goal.add}
               </h2>
-              <p className="text-[11px] text-pink-400 font-bold">Wujudkan barang atau impian kamu, Babe!</p>
+              <p className="text-[11px] text-pink-400 font-bold">{COPY.goal.subtitle}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="p-1.5 bg-pink-50 hover:bg-pink-100 text-pink-400 rounded-full transition-colors"
-            aria-label="Tutup"
+            aria-label={COPY.common.close}
           >
             <X className="w-5 h-5" />
           </button>
@@ -69,11 +70,11 @@ export default function ModalTambahTarget({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-[10px] font-extrabold uppercase tracking-wider text-pink-500">
-              Nama Impian / Wishlist
+              {COPY.goal.name}
             </label>
             <input
               type="text"
-              placeholder="Contoh: Beli Skincare Set, Liburan ke Bali 🌸"
+              placeholder={COPY.goal.namePlaceholder}
               value={nama}
               onChange={(e) => setNama(e.target.value)}
               required
@@ -83,7 +84,7 @@ export default function ModalTambahTarget({
 
           <div>
             <label className="text-[10px] font-extrabold uppercase tracking-wider text-pink-500">
-              Target Nominal (Rp)
+              {COPY.goal.amount}
             </label>
             <input
               type="number"
@@ -97,7 +98,7 @@ export default function ModalTambahTarget({
 
           <div>
             <label className="text-[10px] font-extrabold uppercase tracking-wider text-pink-500">
-              Saldo Awal Terkumpul (Opsional)
+              {COPY.goal.initialAmount}
             </label>
             <input
               type="number"
@@ -113,7 +114,7 @@ export default function ModalTambahTarget({
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 via-rose-400 to-fuchsia-400 py-3.5 text-xs font-extrabold text-white transition-opacity hover:opacity-95 active:scale-[0.98] shadow-lg shadow-pink-500/25"
           >
             <Sparkles className="w-4 h-4 text-pink-100" />
-            Simpan Wishlist Cantik ✨
+            {COPY.goal.save}
           </button>
         </form>
       </div>

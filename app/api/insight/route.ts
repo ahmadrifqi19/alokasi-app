@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { COPY } from "@/lib/copy";
 
 interface InsightRequest {
   transaksiText?: unknown;
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return Response.json(
-      { error: "GEMINI_API_KEY belum di-set di server" },
+      { error: COPY.analysis.insightError },
       { status: 500 },
     );
   }
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as InsightRequest;
     if (typeof body.transaksiText !== "string") {
       return Response.json(
-        { error: "transaksiText wajib berupa teks" },
+        { error: COPY.analysis.insightError },
         { status: 400 },
       );
     }
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
       try {
         const response = await ai.interactions.create({
           model,
-          input: `Kamu adalah asisten keuangan di aplikasi 'Alokasi'. Berdasarkan riwayat pengeluaran user berikut, berikan tepat 2 kalimat saran yang ramah, ringkas, dan memotivasi.\n${body.transaksiText}`,
+          input: `Kamu adalah asisten keuangan di aplikasi Alokasi. Berdasarkan catatan transaksi berikut, berikan tepat 2 kalimat saran dalam bahasa Indonesia yang hangat, singkat, jelas, tidak menghakimi, dan tidak memakai emoji. Gunakan sapaan kamu.\n${body.transaksiText}`,
         });
         insight = response.output_text?.trim();
         break;
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("API insight error:", error);
     return Response.json(
-      { error: error instanceof Error ? error.message : String(error) },
+      { error: COPY.analysis.insightError },
       { status: 500 },
     );
   }

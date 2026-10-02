@@ -1,3 +1,5 @@
+import { COPY } from "@/lib/copy";
+
 export const OTHER_CATEGORY_OPTION_ID = "__other_category__";
 export const CUSTOM_CATEGORY_PREFIX = "custom:";
 
@@ -7,13 +9,13 @@ export interface CategoryOption {
 }
 
 export const DEFAULT_CATEGORY_OPTIONS: CategoryOption[] = [
-  { id: "k1", nama: "Coffee & Treats ☕🍰" },
-  { id: "k2", nama: "Self-Care & Cinema 🍿🎟️" },
-  { id: "k3", nama: "Shopping & Skincare 💄👗" },
-  { id: "k4", nama: "Gajian & Income 🌸" },
-  { id: "k5", nama: "Transportasi & Taxi 🚗" },
-  { id: "k6", nama: "Tagihan & Wi-Fi 📑" },
-  { id: "k7", nama: "Kebutuhan Harian 🛒✨" },
+  { id: "k1", nama: COPY.categories.food },
+  { id: "k2", nama: COPY.categories.personal },
+  { id: "k3", nama: COPY.categories.shopping },
+  { id: "k4", nama: COPY.categories.income },
+  { id: "k5", nama: COPY.categories.transport },
+  { id: "k6", nama: COPY.categories.bills },
+  { id: "k7", nama: COPY.categories.daily },
 ];
 
 export function createOrFindCategoryOption(
@@ -43,6 +45,6 @@ export function getCategoryName(
     DEFAULT_CATEGORY_OPTIONS.find((category) => category.id === categoryId)?.nama ??
     (categoryId.startsWith(CUSTOM_CATEGORY_PREFIX)
       ? categoryId.slice(CUSTOM_CATEGORY_PREFIX.length)
-      : "Kategori lainnya")
+      : COPY.categories.other)
   );
 }

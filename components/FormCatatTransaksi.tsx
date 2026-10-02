@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { X, ArrowUpRight, ArrowDownLeft, ArrowRightLeft, Sparkles, Heart, Trash2 } from "lucide-react";
 import { Dompet, TipeTransaksi } from "@/types";
+import { COPY } from "@/lib/copy";
 import {
   CategoryOption,
   CUSTOM_CATEGORY_PREFIX,
@@ -137,15 +138,15 @@ export default function FormCatatTransaksi({
               <Heart className="w-5 h-5 fill-pink-500 text-pink-500" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-slate-800">Catat Jajan Yuk! ✨</h2>
-              <p className="text-[11px] text-pink-400 font-bold">Kelola pengeluaran & pemasukan kamu</p>
+              <h2 className="text-base font-extrabold text-slate-800">{COPY.transaction.title}</h2>
+              <p className="text-[11px] text-pink-400 font-bold">{initialData ? COPY.receipt.success : COPY.transaction.subtitle}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="p-1.5 bg-pink-50 hover:bg-pink-100 text-pink-400 rounded-full transition-colors"
-            aria-label="Tutup"
+            aria-label={COPY.common.close}
           >
             <X className="w-5 h-5" />
           </button>
@@ -161,7 +162,7 @@ export default function FormCatatTransaksi({
             }`}
           >
             <ArrowUpRight className="w-3.5 h-3.5" />
-            Jajan 💸
+            {COPY.transaction.expense}
           </button>
           <button
             type="button"
@@ -171,7 +172,7 @@ export default function FormCatatTransaksi({
             }`}
           >
             <ArrowDownLeft className="w-3.5 h-3.5" />
-            Income 🌸
+            {COPY.transaction.income}
           </button>
           <button
             type="button"
@@ -181,14 +182,14 @@ export default function FormCatatTransaksi({
             }`}
           >
             <ArrowRightLeft className="w-3.5 h-3.5" />
-            Pindah 💖
+            {COPY.transaction.transfer}
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-[11px] font-extrabold uppercase tracking-wider text-pink-500">
-              Nominal (Rp)
+              {COPY.transaction.amount}
             </label>
             <div className="relative mt-1">
               <span className="absolute left-0 top-1/2 -translate-y-1/2 text-2xl font-black text-pink-300">
@@ -209,7 +210,7 @@ export default function FormCatatTransaksi({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] font-extrabold uppercase tracking-wider text-pink-500">
-                {tipe === "transfer" ? "Dari Dompet" : "Sumber Dompet"}
+                {COPY.transaction.sourceWallet}
               </label>
               <select
                 value={selectedDompetId}
@@ -218,9 +219,9 @@ export default function FormCatatTransaksi({
                 className="w-full mt-1 p-3 bg-pink-50/30 border border-pink-200 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:border-pink-500"
               >
                 {!walletsLoaded ? (
-                  <option value="">Memuat dompet...</option>
+                  <option value="">{COPY.transaction.loadingWallets}</option>
                 ) : walletsWithId.length === 0 ? (
-                  <option value="">Belum ada dompet</option>
+                  <option value="">{COPY.transaction.noWallets}</option>
                 ) : (
                   walletsWithId.map((dompet) => (
                     <option key={dompet.id} value={dompet.id}>
@@ -231,7 +232,7 @@ export default function FormCatatTransaksi({
               </select>
               {walletsLoaded && walletsWithId.length === 0 && (
                 <p className="mt-1 text-[10px] font-medium text-pink-400">
-                  Tambah dompet dulu yuk untuk mulai catat transaksi! 🛍️
+                  {COPY.transaction.addWalletFirst}
                 </p>
               )}
             </div>
@@ -239,7 +240,7 @@ export default function FormCatatTransaksi({
             {tipe === "transfer" ? (
               <div>
                 <label className="text-[11px] font-extrabold uppercase tracking-wider text-pink-500">
-                  Ke Dompet
+                  {COPY.transaction.destinationWallet}
                 </label>
                 <select
                   value={selectedDompetTujuanId}
@@ -248,7 +249,7 @@ export default function FormCatatTransaksi({
                   className="w-full mt-1 p-3 bg-pink-50/30 border border-pink-200 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:border-pink-500"
                 >
                   {transferWallets.length === 0 ? (
-                    <option value="">Perlu dompet lain</option>
+                    <option value="">{COPY.transaction.anotherWalletNeeded}</option>
                   ) : (
                     transferWallets.map((dompet) => (
                       <option key={dompet.id} value={dompet.id}>
@@ -261,7 +262,7 @@ export default function FormCatatTransaksi({
             ) : (
               <div>
                 <label className="text-[11px] font-extrabold uppercase tracking-wider text-pink-500">
-                  Kategori
+                  {COPY.transaction.category}
                 </label>
                 <div className="mt-1 space-y-2">
                   <div className="flex gap-2">
@@ -275,13 +276,13 @@ export default function FormCatatTransaksi({
                           {kategori.nama}
                         </option>
                       ))}
-                      <option value={OTHER_CATEGORY_OPTION_ID}>Lainnya...</option>
+                      <option value={OTHER_CATEGORY_OPTION_ID}>{COPY.transaction.otherCategory}</option>
                     </select>
                     {kategoriOptions.some((kategori) => kategori.id === kategoriId) && (
                       <button
                         type="button"
-                        title="Hapus kategori"
-                        aria-label="Hapus kategori"
+                        title={COPY.transaction.deleteCategory}
+                        aria-label={COPY.transaction.deleteCategory}
                         onClick={() => {
                           const selectedKategori = kategoriOptions.find(
                             (kategori) => kategori.id === kategoriId,
@@ -289,7 +290,7 @@ export default function FormCatatTransaksi({
                           if (
                             selectedKategori &&
                             window.confirm(
-                              `Hapus kategori "${selectedKategori.nama}" dari pilihan? Riwayat lama tetap tersimpan.`,
+                              COPY.transaction.deleteCategoryConfirm.replace("{name}", selectedKategori.nama),
                             )
                           ) {
                             onDeleteCategory(kategoriId);
@@ -310,7 +311,7 @@ export default function FormCatatTransaksi({
                       type="text"
                       value={customKategori}
                       onChange={(e) => setCustomKategori(e.target.value)}
-                      placeholder="Tulis nama kategori baru"
+                      placeholder={COPY.transaction.newCategory}
                       maxLength={50}
                       required
                       className="w-full rounded-2xl border border-pink-200 bg-pink-50/30 p-3 text-xs font-bold text-slate-700 focus:border-pink-500 focus:outline-none"
@@ -323,13 +324,13 @@ export default function FormCatatTransaksi({
 
           <div>
             <label className="text-[11px] font-extrabold uppercase tracking-wider text-pink-500">
-              Catatan Jajan (Opsional)
+              {COPY.transaction.note}
             </label>
             <input
               type="text"
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
-              placeholder="Misal: Matcha Latte & Beli Skincare ✨"
+              placeholder={COPY.transaction.notePlaceholder}
               className="w-full mt-1 p-3 bg-pink-50/30 border border-pink-200 rounded-2xl text-xs font-medium text-slate-700 focus:outline-none focus:border-pink-500"
             />
           </div>
@@ -340,7 +341,7 @@ export default function FormCatatTransaksi({
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 via-rose-400 to-fuchsia-400 py-3.5 text-xs font-extrabold text-white transition-opacity hover:opacity-95 active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-pink-500/25"
           >
             <Sparkles className="w-4 h-4 text-pink-100" />
-            Simpan Transaksi Cantik
+            {COPY.transaction.save}
           </button>
         </form>
       </div>

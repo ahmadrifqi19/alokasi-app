@@ -1,3 +1,5 @@
+import { COPY } from "@/lib/copy";
+
 export interface ReceiptResult {
   total: number;
   kategori?: string;
@@ -5,7 +7,7 @@ export interface ReceiptResult {
 }
 
 const INSIGHT_FALLBACK =
-  "Tetap jaga ritme pencatatan keuanganmu agar anggaran bulanan tetap aman!";
+  COPY.analysis.insightError;
 
 function toDataUrl(base64: string, mimeType: string) {
   if (base64.startsWith("data:")) return base64;
@@ -37,7 +39,7 @@ async function compressBase64Image(
 
       const context = canvas.getContext("2d");
       if (!context) {
-        reject(new Error("Browser tidak dapat memproses gambar struk."));
+        reject(new Error(COPY.receipt.failed));
         return;
       }
 
@@ -45,11 +47,10 @@ async function compressBase64Image(
       try {
         resolve(canvas.toDataURL("image/jpeg", quality));
       } catch {
-        reject(new Error("Gagal mengompres gambar struk."));
+        reject(new Error(COPY.receipt.failed));
       }
     };
-    image.onerror = () =>
-      reject(new Error("Format gambar tidak didukung. Gunakan JPEG, PNG, atau WebP."));
+    image.onerror = () => reject(new Error(COPY.receipt.invalidFormat));
     image.src = source;
   });
 }
@@ -81,7 +82,7 @@ export async function analyzeReceiptImage(
     mimeType,
   );
   const match = compressedDataUrl.match(/^data:([^;,]+);base64,([\s\S]+)$/);
-  if (!match) throw new Error("Format foto struk tidak valid.");
+  if (!match) throw new Error(COPY.receipt.invalidFormat);
 
   const response = await fetch("/api/scan-struk", {
     method: "POST",
@@ -101,7 +102,7 @@ export async function analyzeReceiptImage(
       ? data.total
       : Number(String(data.total ?? 0).replace(/[^\d]/g, ""));
   if (!Number.isFinite(total) || total === 0) {
-    throw new Error("Total tidak ditemukan. Pastikan foto struk jelas.");
+    throw new Error(COPY.receipt.totalMissing);
   }
 
   return {
@@ -128,7 +129,7 @@ export async function getFinancialInsight(
 
     if (!response.ok) throw new Error(responseError(payload, response.status));
     if (typeof data.insight !== "string" || !data.insight.trim()) {
-      throw new Error("Insight tidak tersedia.");
+      throw new Error(COPY.analysis.insightError);
     }
     return data.insight;
   } catch (error) {

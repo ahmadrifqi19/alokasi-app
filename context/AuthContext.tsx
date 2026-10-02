@@ -13,6 +13,7 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { doc, setDoc, updateDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { COPY } from "@/lib/copy";
 
 interface ExtendedUser extends User {
   customPhotoURL?: string;
@@ -69,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         doc(db, "users", res.user.uid),
         {
           uid: res.user.uid,
-          name: res.user.displayName || "Pengguna Alokasi",
+          name: res.user.displayName || COPY.dashboard.defaultName,
           email: res.user.email,
           photoURL: res.user.photoURL || "",
           updatedAt: serverTimestamp(),
